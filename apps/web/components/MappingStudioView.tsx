@@ -40,6 +40,7 @@ export function MappingStudioView({
     [data.questions[0]?.id || ""]: true
   });
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pdfTotalPages, setPdfTotalPages] = useState<number>(0);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +68,7 @@ export function MappingStudioView({
   const activeQuestion =
     questions.find((q) => q.id === activeQuestionId) || questions[0];
 
-  const totalPages = data.pageCount || 1;
+  const totalPages = Math.max(1, pdfTotalPages || data.pageCount || 1);
 
   const toggleExpand = (qId: string) => {
     setExpandedQuestions((prev) => {
@@ -77,8 +78,11 @@ export function MappingStudioView({
 
     setActiveQuestionId(qId);
     const targetQ = questions.find((q) => q.id === qId);
-    if (targetQ && targetQ.regions.length > 0) {
-      setCurrentPage(targetQ.regions[0].pageNumber);
+    if (targetQ && targetQ.regions && targetQ.regions.length > 0) {
+      const targetPage = targetQ.regions[0].pageNumber;
+      if (targetPage && targetPage !== currentPage) {
+        setCurrentPage(targetPage);
+      }
     }
   };
 
@@ -96,6 +100,10 @@ export function MappingStudioView({
   const selectQuestionFromCanvas = (qId: string) => {
     setActiveQuestionId(qId);
     setExpandedQuestions((prev) => ({ ...prev, [qId]: true }));
+    const targetEl = document.querySelector(`[data-card-question-id="${qId}"]`);
+    if (targetEl) {
+      targetEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
   };
 
   // Scroll active bounding box into view when question changes
@@ -116,7 +124,7 @@ export function MappingStudioView({
 
   // Questions on current page
   const questionsOnPage = questions.filter(
-    (q) => q.regions.some((r) => r.pageNumber === currentPage) || (currentPage === 1 && q.regions.length === 0)
+    (q) => (q.regions && q.regions.some((r) => r.pageNumber === currentPage)) || (currentPage === 1 && (!q.regions || q.regions.length === 0))
   );
 
   return (
@@ -146,10 +154,12 @@ export function MappingStudioView({
             const isExpanded = Boolean(expandedQuestions[q.id]);
             const isTargetActive = q.id === activeQuestion?.id;
             const scoreClass = getScoreBadgeClass(q.awardedMarks, q.maxMarks, q.status);
+            const questionPage = q.regions?.[0]?.pageNumber || 1;
 
             return (
               <div
                 key={q.id}
+                data-card-question-id={q.id}
                 className={`biology-question-card ${isExpanded ? "is-expanded" : ""} ${isTargetActive ? "is-active-target" : ""}`}
               >
                 <div
@@ -160,7 +170,12 @@ export function MappingStudioView({
                     <span className={`question-number-circle ${isExpanded ? "orange-circle" : "dark-circle"}`}>
                       {q.number}
                     </span>
-                    <p className="question-text-title">{q.text}</p>
+                    <div className="question-title-meta">
+                      <p className="question-text-title">{q.text}</p>
+                      {questionPage > 1 && (
+                        <span className="question-page-indicator">Found on Page {questionPage}</span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="question-header-right">
@@ -180,18 +195,23 @@ export function MappingStudioView({
                 {isExpanded && (
                   <div className="question-card-body-expanded">
                     {/* Transcribed student response */}
-                    {q.transcribedAnswer && (
-                      <div className="transcribed-answer-preview">
-                        <strong className="transcribed-label">Transcribed Answer:</strong>
-                        <p className="transcribed-text">{q.transcribedAnswer}</p>
+                    <div className="transcribed-answer-preview">
+                      <div className="transcribed-answer-header">
+                        <strong className="transcribed-label">Transcribed Student Answer:</strong>
+                        <span className={`status-pill-small ${q.status || "answered"}`}>
+                          {q.status === "unanswered" ? "Unattempted" : q.status === "partial" ? "Partial Credit" : "Answered"}
+                        </span>
                       </div>
-                    )}
+                      <p className="transcribed-text">
+                        {q.transcribedAnswer || (q.status === "unanswered" ? "[No answer provided by student]" : "Answer recorded.")}
+                      </p>
+                    </div>
 
                     {/* AI Feedback */}
                     <div className="ai-feedback-inner-card">
-                      <strong className="ai-feedback-title">AI Feedback</strong>
+                      <strong className="ai-feedback-title">AI Rubric Feedback</strong>
                       <p className="ai-feedback-text">
-                        {q.aiFeedback || "Evaluation completed."}
+                        {q.aiFeedback || "Evaluation completed based on rubric criteria."}
                       </p>
                     </div>
                   </div>
@@ -216,7 +236,7 @@ export function MappingStudioView({
               <button
                 type="button"
                 className="zoom-btn"
-                onClick={() => setZoomLevel((z) => Math.max(75, z - 15))}
+                onClick={() => setZoomLevel((z) => Math.max(65, z - 15))}
                 title="Zoom Out"
               >
                 <Minus size={14} />
@@ -225,7 +245,7 @@ export function MappingStudioView({
               <button
                 type="button"
                 className="zoom-btn"
-                onClick={() => setZoomLevel((z) => Math.min(135, z + 15))}
+                onClick={() => setZoomLevel((z) => Math.min(150, z + 15))}
                 title="Zoom In"
               >
                 <Plus size={14} />
@@ -262,15 +282,17 @@ export function MappingStudioView({
         {/* Paper Canvas Container */}
         <div className="sheet-canvas-container" ref={canvasRef}>
           <div
-            className="authentic-ruled-sheet"
+            className="document-canvas-card"
             style={{
               transform: `scale(${zoomLevel / 100})`,
-              transformOrigin: "top center"
+              transformOrigin: "top center",
+              width: "100%",
+              maxWidth: "720px"
             }}
           >
             {/* If an image or PDF was uploaded, render it with bounding boxes */}
             {answerSheetImageUrl || isAnswerSheetPdf ? (
-              <div className="uploaded-image-canvas-wrapper" style={{ position: "relative" }}>
+              <div className="uploaded-image-canvas-wrapper" style={{ position: "relative", width: "100%" }}>
                 {answerSheetImageUrl ? (
                   <img
                     src={answerSheetImageUrl}
@@ -278,11 +300,15 @@ export function MappingStudioView({
                     className="uploaded-sheet-img"
                   />
                 ) : (
-                  <PdfCanvasRenderer file={answerSheetFile!} pageNumber={currentPage} />
+                  <PdfCanvasRenderer 
+                    file={answerSheetFile!} 
+                    pageNumber={currentPage} 
+                    onLoadDoc={(pages) => setPdfTotalPages(pages)}
+                  />
                 )}
                 {/* Overlay Bounding Boxes on the image/canvas */}
                 {questions.map((q) => {
-                  const regionsOnPage = q.regions.filter((r) => r.pageNumber === currentPage);
+                  const regionsOnPage = (q.regions || []).filter((r) => r.pageNumber === currentPage);
                   const isTarget = q.id === activeQuestion?.id;
 
                   return regionsOnPage.map((r, idx) => (
@@ -305,7 +331,7 @@ export function MappingStudioView({
               </div>
             ) : (
               /* Ruled Sheet with Real Extracted Content & Bounding Boxes */
-              <>
+              <div className="authentic-ruled-sheet">
                 {/* Red Left Margin Line */}
                 <div className="sheet-left-margin-line" />
 
@@ -325,7 +351,6 @@ export function MappingStudioView({
                   ) : (
                     questionsOnPage.map((q) => {
                       const isTarget = q.id === activeQuestion?.id;
-                      const hasRegions = q.regions.length > 0;
                       const isSkipped = q.status === "unanswered";
 
                       return (
@@ -353,7 +378,7 @@ export function MappingStudioView({
                     })
                   )}
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>

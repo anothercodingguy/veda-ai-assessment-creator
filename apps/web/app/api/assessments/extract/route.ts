@@ -183,26 +183,41 @@ function normalizePayload(
           ? "Accurate answer matching rubric criteria."
           : `Awarded ${awardedMarks}/${maxMarks} marks based on evaluation criteria.`;
 
+    const estimatedPage = Math.max(1, Number(q?.pageNumber) || Math.floor(idx / 3) + 1);
+    const posOnPage = idx % 3;
+
     const rawRegions = Array.isArray(q?.regions) ? q.regions : [];
     const regions = rawRegions.length > 0
-      ? rawRegions.map((r: any, rIdx: number) => ({
-          pageNumber: Math.max(1, Number(r?.pageNumber) || 1),
-          boundingBox: {
-            top: clamp(Number(r?.boundingBox?.top ?? (10 + (idx % 4) * 20)), 0, 95),
-            left: clamp(Number(r?.boundingBox?.left ?? 5), 0, 95),
-            width: clamp(Number(r?.boundingBox?.width ?? 90), 5, 100),
-            height: clamp(Number(r?.boundingBox?.height ?? 16), 5, 100)
-          },
-          label: typeof r?.label === "string" ? r.label : `Q${number}`
-        }))
+      ? rawRegions.map((r: any, rIdx: number) => {
+          const rPage = Math.max(1, Number(r?.pageNumber) || estimatedPage);
+          const rawTop = Number(r?.boundingBox?.top);
+          const safeTop = !isNaN(rawTop) && rawTop > 0 && rawTop < 90
+            ? rawTop
+            : 10 + posOnPage * 28;
+          const rawHeight = Number(r?.boundingBox?.height);
+          const safeHeight = !isNaN(rawHeight) && rawHeight > 4 && rawHeight < 40
+            ? rawHeight
+            : 22;
+
+          return {
+            pageNumber: rPage,
+            boundingBox: {
+              top: clamp(safeTop, 5, 80),
+              left: clamp(Number(r?.boundingBox?.left ?? 6), 3, 90),
+              width: clamp(Number(r?.boundingBox?.width ?? 88), 10, 96),
+              height: clamp(safeHeight, 8, 35)
+            },
+            label: typeof r?.label === "string" ? r.label : `Q${number}`
+          };
+        })
       : [
           {
-            pageNumber: 1,
+            pageNumber: estimatedPage,
             boundingBox: {
-              top: clamp(10 + (idx % 4) * 20, 0, 80),
-              left: 5,
-              width: 90,
-              height: 16
+              top: clamp(10 + posOnPage * 28, 5, 80),
+              left: 6,
+              width: 88,
+              height: 22
             },
             label: `Q${number}`
           }

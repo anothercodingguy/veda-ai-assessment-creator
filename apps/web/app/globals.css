@@ -2522,13 +2522,22 @@ button:disabled {
   font-style: italic;
 }
 
+.document-canvas-card {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
 .uploaded-image-canvas-wrapper {
   position: relative;
   width: 100%;
-  max-width: 650px;
   border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
 }
 
 .uploaded-sheet-img {
@@ -2540,17 +2549,99 @@ button:disabled {
 .image-bounding-box {
   position: absolute;
   border: 2px solid #22c55e;
-  background: rgba(34, 197, 94, 0.12);
+  background: rgba(34, 197, 94, 0.14);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.18s ease;
+  z-index: 5;
+}
+
+.image-bounding-box:hover {
+  background: rgba(34, 197, 94, 0.24);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.4);
 }
 
 .image-bounding-box.target-bounding-box-active {
   border-color: #16a34a;
-  background: rgba(34, 197, 94, 0.22);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.28);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5), 0 4px 12px rgba(34, 197, 94, 0.25);
+  z-index: 10;
 }
+
+
+.pdf-page-loading-skeleton {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  z-index: 10;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.pdf-render-error-box {
+  padding: 30px;
+  text-align: center;
+  color: #ef4444;
+  font-size: 13px;
+  background: #fef2f2;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+}
+
+.question-title-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.question-page-indicator {
+  font-size: 11px;
+  color: #ea580c;
+  font-weight: 600;
+  background: rgba(234, 88, 12, 0.08);
+  padding: 1px 7px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.transcribed-answer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.status-pill-small {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.status-pill-small.answered {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-pill-small.partial {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-pill-small.unanswered {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
 
 .upload-api-key-strip {
   display: flex;
