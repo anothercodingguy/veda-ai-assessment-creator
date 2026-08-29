@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { ArrowRight, Upload, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ArrowRight, Key, Sparkles, Upload, X } from "lucide-react";
 import { TeacherIllustration } from "./TeacherIllustration";
 import { ExtractingAnimationView } from "./ExtractingAnimationView";
 import { MappingStudioView } from "./MappingStudioView";
@@ -20,12 +20,32 @@ export function ExamUploadStudio() {
   const [viewState, setViewState] = useState<ViewState>("upload");
   const [qpFile, setQpFile] = useState<FileMeta | null>(null);
   const [asFile, setAsFile] = useState<FileMeta | null>(null);
+  const [apiKey, setApiKey] = useState("");
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [isDraggingQP, setIsDraggingQP] = useState(false);
   const [isDraggingAS, setIsDraggingAS] = useState(false);
   const [extractStage, setExtractStage] = useState<string>("Initializing extraction pipeline...");
   const [extractPercent, setExtractPercent] = useState<number>(15);
   const [extractionPayload, setExtractionPayload] = useState<AssessmentExtractionPayload | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Load API key from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedKey = localStorage.getItem("veda_groq_api_key") || "";
+      if (savedKey) {
+        setApiKey(savedKey);
+      }
+    }
+  }, []);
+
+  const handleApiKeyChange = (val: string) => {
+    setApiKey(val);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("veda_groq_api_key", val.trim());
+    }
+    setErrorMsg("");
+  };
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))}KB`;
@@ -58,8 +78,6 @@ export function ExamUploadStudio() {
     setErrorMsg("");
   };
 
-
-
   const handleStartMapping = async () => {
     if (!qpFile || !asFile) return;
 
@@ -70,6 +88,7 @@ export function ExamUploadStudio() {
       const payload = await processAssessmentExtraction(
         qpFile.file,
         asFile.file,
+        apiKey,
         (stage, percent) => {
           setExtractStage(stage);
           setExtractPercent(percent);
@@ -77,9 +96,9 @@ export function ExamUploadStudio() {
       );
       setExtractionPayload(payload);
       setViewState("studio");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Extraction error:", err);
-      setErrorMsg("Failed to complete extraction. Please check the uploaded files.");
+      setErrorMsg(err.message || "Failed to complete AI extraction. Please verify your Groq API key and documents.");
       setViewState("upload");
     }
   };
@@ -92,8 +111,10 @@ export function ExamUploadStudio() {
     return (
       <MappingStudioView
         data={extractionPayload}
-        questionPaperName={qpFile?.name || "Biology_Unit_Assessment.pdf"}
+        questionPaperName={qpFile?.name || "Question_Paper.pdf"}
         answerSheetName={asFile?.name || "Student_Answer_Sheet.pdf"}
+        questionPaperFile={qpFile?.file}
+        answerSheetFile={asFile?.file}
         onReset={() => {
           setViewState("upload");
           setQpFile(null);
@@ -113,7 +134,7 @@ export function ExamUploadStudio() {
         <h1 className="exam-main-title">
           Upload <span className="title-orange-pill">Question Paper & Answer Sheets</span>
         </h1>
-        <p className="exam-main-subtitle">Upload both files to get started</p>
+        <p className="exam-main-subtitle">Upload both files to run real AI assessment extraction with Groq</p>
       </div>
 
       {/* Teacher Orbital Graphic */}
@@ -138,7 +159,7 @@ export function ExamUploadStudio() {
         >
           <input
             type="file"
-            accept=".pdf,.txt,.png,.jpg,.jpeg"
+            accept=".pdf,.txt,.png,.jpg,.jpeg,.webp"
             id="qp-file-input"
             className="hidden-file-input"
             onChange={(e) => {
@@ -155,20 +176,18 @@ export function ExamUploadStudio() {
               <p className="dropzone-label">
                 Upload <span className="label-orange">Question Paper</span>
               </p>
-              <span className="dropzone-limit">Max 10MB</span>
+              <span className="dropzone-limit">PDF, Images or Text (Max 10MB)</span>
             </label>
           ) : (
             <div className="selected-pdf-card">
               <div className="pdf-icon-red">
-                <span>PDF</span>
+                <span>FILE</span>
               </div>
               <div className="pdf-info-meta">
                 <strong className="pdf-filename" title={qpFile.name}>
                   {qpFile.name}
                 </strong>
-                <span className="pdf-filesize">
-                  {qpFile.sizeText}
-                </span>
+                <span className="pdf-filesize">{qpFile.sizeText}</span>
               </div>
               <button
                 type="button"
@@ -203,7 +222,7 @@ export function ExamUploadStudio() {
         >
           <input
             type="file"
-            accept=".pdf,.txt,.png,.jpg,.jpeg"
+            accept=".pdf,.txt,.png,.jpg,.jpeg,.webp"
             id="as-file-input"
             className="hidden-file-input"
             onChange={(e) => {
@@ -220,20 +239,18 @@ export function ExamUploadStudio() {
               <p className="dropzone-label">
                 Upload <span className="label-orange">Answer Sheet</span>
               </p>
-              <span className="dropzone-limit">Max 10MB</span>
+              <span className="dropzone-limit">PDF, Images or Text (Max 10MB)</span>
             </label>
           ) : (
             <div className="selected-pdf-card">
               <div className="pdf-icon-red">
-                <span>PDF</span>
+                <span>FILE</span>
               </div>
               <div className="pdf-info-meta">
                 <strong className="pdf-filename" title={asFile.name}>
                   {asFile.name}
                 </strong>
-                <span className="pdf-filesize">
-                  {asFile.sizeText}
-                </span>
+                <span className="pdf-filesize">{asFile.sizeText}</span>
               </div>
               <button
                 type="button"
@@ -252,6 +269,33 @@ export function ExamUploadStudio() {
         </div>
       </div>
 
+      {/* Groq API Key Config Strip */}
+      <div className="upload-api-key-strip">
+        <button
+          type="button"
+          className="toggle-api-key-link"
+          onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+        >
+          <Key size={14} />
+          <span>{apiKey ? "Groq API Key Configured ✓" : "Configure Groq API Key (Optional Override)"}</span>
+        </button>
+
+        {showApiKeyInput && (
+          <div className="api-key-input-container">
+            <input
+              type="password"
+              placeholder="gsk_..."
+              value={apiKey}
+              onChange={(e) => handleApiKeyChange(e.target.value)}
+              className="api-key-field"
+            />
+            <small className="api-key-hint">
+              Used to call Groq LLM & Vision models for live extraction. Saved to browser storage.
+            </small>
+          </div>
+        )}
+      </div>
+
       {/* Action Button: Start Mapping */}
       <div className="mapping-action-wrapper">
         <button
@@ -260,17 +304,20 @@ export function ExamUploadStudio() {
           className={`start-mapping-btn ${isBothSelected ? "active" : "disabled"}`}
           onClick={handleStartMapping}
         >
-          <span>Start Mapping</span>
+          <Sparkles size={18} />
+          <span>Start AI Mapping</span>
           <ArrowRight size={18} />
         </button>
 
         <p className="mapping-hint-text">
-          Once both files are uploaded, you&apos;ll able to map answers with questions
+          Once both files are uploaded, Groq AI will extract and map answers with questions
         </p>
 
-
-
-        {errorMsg && <p className="form-error">{errorMsg}</p>}
+        {errorMsg && (
+          <div className="upload-error-banner">
+            <p className="form-error">{errorMsg}</p>
+          </div>
+        )}
       </div>
     </section>
   );

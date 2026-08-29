@@ -16,7 +16,7 @@ import {
 import { AppShell } from "../../components/AppShell";
 
 export default function SettingsPage() {
-  const [apiKey, setApiKey] = useState("gsk_********************************");
+  const [apiKey, setApiKey] = useState("");
   const [selectedModel, setSelectedModel] = useState("llama-3.3-70b-versatile");
   const [schoolName, setSchoolName] = useState("Delhi Public School");
   const [branch, setBranch] = useState("Bokaro Steel City");
@@ -24,8 +24,20 @@ export default function SettingsPage() {
   const [gradingBias, setGradingBias] = useState("Standard (Balanced Rubric)");
   const [saved, setSaved] = useState(false);
 
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedKey = localStorage.getItem("veda_groq_api_key") || "";
+      if (savedKey) {
+        setApiKey(savedKey);
+      }
+    }
+  }, []);
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (typeof window !== "undefined" && apiKey) {
+      localStorage.setItem("veda_groq_api_key", apiKey.trim());
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };

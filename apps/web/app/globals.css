@@ -2462,6 +2462,137 @@ button:disabled {
   color: #334155;
 }
 
+.questions-col-subtitle {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.transcribed-answer-preview {
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.transcribed-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #334155;
+  margin-bottom: 2px;
+}
+
+.transcribed-text {
+  font-size: 12.5px;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.45;
+  font-style: italic;
+}
+
+.uploaded-image-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 650px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.uploaded-sheet-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.image-bounding-box {
+  position: absolute;
+  border: 2px solid #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.image-bounding-box.target-bounding-box-active {
+  border-color: #16a34a;
+  background: rgba(34, 197, 94, 0.22);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
+}
+
+.upload-api-key-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.toggle-api-key-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toggle-api-key-link:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.api-key-input-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.api-key-field {
+  width: 100%;
+  padding: 8px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 13px;
+  background: #ffffff;
+  outline: none;
+  font-family: monospace;
+}
+
+.api-key-field:focus {
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+.api-key-hint {
+  font-size: 11px;
+  color: #64748b;
+  text-align: center;
+}
+
+.upload-error-banner {
+  margin-top: 12px;
+  padding: 10px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  max-width: 500px;
+  text-align: center;
+}
+
 .eval-question-box,
 .eval-answer-box,
 .eval-feedback-box {
