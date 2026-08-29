@@ -151,22 +151,23 @@ function robustJsonParse(text: string): any {
 function normalizePayload(
   raw: any,
   qpName: string,
-  asName: string
+  asName: string,
+  totalAnswerPages = 1
 ): AssessmentExtractionPayload {
   const paperTitle =
-    typeof raw?.paperTitle === "string" && raw.paperTitle.trim()
-      ? raw.paperTitle.trim()
-      : qpName.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+    typeof raw?.paperTitle === "string" && raw.paperTitle
+      ? raw.paperTitle
+      : qpName.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
 
   const subject =
-    typeof raw?.subject === "string" && raw.subject.trim()
-      ? raw.subject.trim()
-      : "General Assessment";
+    typeof raw?.subject === "string" && raw.subject
+      ? raw.subject
+      : "General Academic";
 
   const classLevel =
-    typeof raw?.classLevel === "string" && raw.classLevel.trim()
-      ? raw.classLevel.trim()
-      : "Class X / Senior Secondary";
+    typeof raw?.classLevel === "string" && raw.classLevel
+      ? raw.classLevel
+      : "Class 10 / Standard";
 
   const rawQuestions = Array.isArray(raw?.questions) ? raw.questions : [];
 
@@ -209,7 +210,7 @@ function normalizePayload(
 
     const rawRegions = Array.isArray(q?.regions) ? q.regions : [];
     const regions = (status === "unanswered" ? [] : rawRegions).map((r: any) => ({
-      pageNumber: Math.max(1, Number(r?.pageNumber) || 2),
+      pageNumber: Math.max(1, Number(r?.pageNumber) || 1),
       boundingBox: {
         top: clamp(Number(r?.boundingBox?.top ?? 15), 0, 100),
         left: clamp(Number(r?.boundingBox?.left ?? 6), 0, 100),
@@ -246,7 +247,7 @@ function normalizePayload(
   const percentage =
     totalMaxMarks > 0 ? Math.round((totalScore / totalMaxMarks) * 100) : 0;
 
-  const pageCount = Math.max(1, Number(raw?.pageCount) || 1);
+  const pageCount = Math.max(1, Number(raw?.pageCount) || 1, totalAnswerPages);
 
   const overallFeedback =
     typeof raw?.overallFeedback === "string" && raw.overallFeedback
@@ -308,6 +309,8 @@ export async function POST(request: Request) {
     const clientAsText = formData.get("asText") as string | null;
     const clientQpImages = formData.get("qpImages") as string | null;
     const clientAsImages = formData.get("asImages") as string | null;
+    const clientAsPageCount = Number(formData.get("asPageCount")) || 0;
+    const clientQpPageCount = Number(formData.get("qpPageCount")) || 0;
 
     let qpText = clientQpText?.trim() || "";
     let asText = clientAsText?.trim() || "";
@@ -358,6 +361,8 @@ export async function POST(request: Request) {
       });
     }
 
+    const totalDetectedAnswerPages = Math.max(asImages.length, clientAsPageCount, 1);
+
     const client = new OpenAI({
       apiKey,
       baseURL: process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta/openai/"
@@ -373,20 +378,18 @@ export async function POST(request: Request) {
 
     const systemPrompt = `
 You are VedaAI: an expert Assessment Extraction and Evaluation Intelligence Engine.
-You have been provided the Question Paper and Student Answer Sheet (including visual pages and extracted text).
+You have been provided the complete Question Paper and Student Answer Sheet (including all visual pages and extracted text).
 
 CRITICAL TASK RULES:
-1. QUESTION EXTRACTION:
-   - Extract ALL questions from the Question Paper in exact printed order.
-   - If a question contains sub-parts (e.g., 11(a), 11(b), 12(i), 12(ii)), extract each sub-part as a distinct question item so it can be evaluated separately.
-   - Extract the exact maxMarks for each question.
+1. COMPLETE DOCUMENT COVERAGE:
+   - The student answer sheet contains ${totalDetectedAnswerPages} total pages (Page 1 through Page ${totalDetectedAnswerPages}).
+   - You MUST inspect EVERY SINGLE PAGE from Page 1 to Page ${totalDetectedAnswerPages}. Do NOT stop early or skip any later pages.
+   - Extract ALL questions printed across the Question Paper in exact printed order. If there are sub-parts (e.g. 11(a), 11(b), 12(i), 12(ii)), extract each sub-part as a distinct question item.
 
 2. ACCURATE ANSWER MAPPING (OUT-OF-ORDER AWARE):
-   - Thoroughly inspect EVERY page of the student's answer sheet (starting from Page 1).
-   - Match the student's handwritten response to the matching question:
-     * Match by question numbers written by the student (e.g. "Ans 1", "Q.2", "Section B 3", "(a)", "(b)", "5.").
-     * Match by subject content and key terminology if question numbers are missing or written ambiguously.
-     * Note: Students frequently answer questions OUT OF ORDER (for example, attempting Question 5 first on Page 1, Question 2 on Page 1, Question 1 on Page 2). Always map each answer to its true question regardless of the written sequence.
+   - Check every page of the answer sheet for each question.
+   - Students may answer questions in any order (e.g. Question 5 on Page 1, Question 1 on Page 2, Question 3 on Page 4). Map each answer accurately to its corresponding question regardless of sequence.
+   - Look for student headings/labels ("Ans 1", "Q.2", "Section B 3", "(iv)") and subject topic context.
    - Faithfully transcribe the student's actual handwritten text into "transcribedAnswer".
 
 3. ACCURATE PAGE NUMBER & BOUNDING BOX:
@@ -395,14 +398,14 @@ CRITICAL TASK RULES:
    - If an answer spans multiple pages (e.g. begins on Page 1 and finishes on Page 2), include a region entry for each page.
 
 4. UNATTEMPTED QUESTIONS:
-   - If a question was NOT attempted anywhere in the student's answer sheet:
+   - If a question was NOT attempted anywhere in the entire answer sheet:
      * status: "unanswered"
      * awardedMarks: 0
      * transcribedAnswer: "[Unattempted by student]"
      * regions: [] (DO NOT create bounding box regions for unattempted questions).
 
 5. RUBRIC-BASED GRADING & CONSTRUCTIVE FEEDBACK:
-   - Evaluate attempted answers against curriculum standards (CBSE / ICSE / University rubrics).
+   - Evaluate attempted answers against standard curriculum rubrics (CBSE / ICSE / University rubrics).
    - "answered": full marks for fully correct answers.
    - "partial": partial marks with clear rationale for incomplete/imperfect answers.
    - "unanswered": 0 marks.
@@ -511,7 +514,7 @@ Please extract all questions in printed order, accurately map student handwritte
     }
 
     const parsed = robustJsonParse(content);
-    const normalized = normalizePayload(parsed, qpName, asName);
+    const normalized = normalizePayload(parsed, qpName, asName, totalDetectedAnswerPages);
     const validated = assessmentExtractionPayloadSchema.parse(normalized);
 
     return NextResponse.json(validated);

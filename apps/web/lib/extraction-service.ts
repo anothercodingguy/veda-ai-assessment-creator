@@ -56,7 +56,7 @@ async function extractPdfTextClient(file: File): Promise<string> {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let fullText = "";
-    const maxPages = Math.min(pdf.numPages, 30);
+    const maxPages = Math.min(pdf.numPages, 50);
     for (let i = 1; i <= maxPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
@@ -72,7 +72,7 @@ async function extractPdfTextClient(file: File): Promise<string> {
 
 async function extractDocumentVisualPages(
   file: File,
-  maxPages = 6
+  maxPages = 30
 ): Promise<{ dataUrl: string; pageNumber: number }[]> {
   if (typeof window === "undefined") return [];
 
@@ -85,7 +85,7 @@ async function extractDocumentVisualPages(
         URL.revokeObjectURL(url);
         const canvas = document.createElement("canvas");
         let { width, height } = img;
-        const maxDim = 800;
+        const maxDim = 640;
         if (width > maxDim || height > maxDim) {
           if (width > height) {
             height = Math.round((height * maxDim) / width);
@@ -100,7 +100,7 @@ async function extractDocumentVisualPages(
         const ctx = canvas.getContext("2d");
         if (!ctx) return resolve([]);
         ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.45);
         resolve([{ dataUrl, pageNumber: 1 }]);
       };
       img.onerror = () => {
@@ -124,7 +124,7 @@ async function extractDocumentVisualPages(
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.0 });
         const canvas = document.createElement("canvas");
-        const maxDim = 720;
+        const maxDim = 640;
         let scale = 1.0;
         if (viewport.width > maxDim) {
           scale = maxDim / viewport.width;
@@ -137,7 +137,7 @@ async function extractDocumentVisualPages(
         if (!ctx) continue;
 
         await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.55);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.45);
         pages.push({ dataUrl, pageNumber: i });
       }
       return pages;
@@ -157,7 +157,7 @@ export async function processAssessmentExtraction(
   onProgress?: (stage: string, percent: number) => void
 ): Promise<AssessmentExtractionPayload> {
   // Stage 1: Document OCR Ingestion & Optimization
-  onProgress?.("Reading uploaded documents and rendering visual pages...", 20);
+  onProgress?.("Reading uploaded documents and rendering all visual pages...", 20);
 
   const [optimizedQP, optimizedAS] = await Promise.all([
     optimizeImageForUpload(qpFile),
@@ -167,20 +167,20 @@ export async function processAssessmentExtraction(
   const [qpExtractedText, asExtractedText, qpVisualPages, asVisualPages] = await Promise.all([
     extractPdfTextClient(qpFile),
     extractPdfTextClient(asFile),
-    extractDocumentVisualPages(qpFile, 3),
-    extractDocumentVisualPages(asFile, 6)
+    extractDocumentVisualPages(qpFile, 15),
+    extractDocumentVisualPages(asFile, 30)
   ]);
 
   // Stage 2: Question Extraction in Printed Order
-  onProgress?.("Extracting questions in printed order (preserving sub-parts)...", 45);
+  onProgress?.(`Extracting questions across ${qpVisualPages.length || 1} QP pages (preserving sub-parts)...`, 45);
   await new Promise((r) => setTimeout(r, 200));
 
-  // Stage 3: Handwritten Answer Transcription
-  onProgress?.("Transcribing student handwritten answers across pages...", 70);
+  // Stage 3: Handwritten Answer Transcription across all pages
+  onProgress?.(`Transcribing student handwritten answers across all ${asVisualPages.length || 1} pages...`, 70);
   await new Promise((r) => setTimeout(r, 200));
 
   // Stage 4: Answer Mapping & Out-of-Order Detection
-  onProgress?.("Mapping answers to questions (handling out-of-order answers & spans)...", 88);
+  onProgress?.("Mapping answers to questions across complete answer sheet...", 88);
 
   const effectiveApiKey =
     apiKey?.trim() ||
@@ -204,6 +204,8 @@ export async function processAssessmentExtraction(
   if (asExtractedText) formData.append("asText", asExtractedText);
   if (qpVisualPages.length > 0) formData.append("qpImages", JSON.stringify(qpVisualPages));
   if (asVisualPages.length > 0) formData.append("asImages", JSON.stringify(asVisualPages));
+  formData.append("asPageCount", String(asVisualPages.length || 1));
+  formData.append("qpPageCount", String(qpVisualPages.length || 1));
   if (effectiveApiKey) {
     formData.append("apiKey", effectiveApiKey);
   }
