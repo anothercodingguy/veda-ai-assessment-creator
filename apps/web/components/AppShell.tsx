@@ -4,34 +4,23 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  AlertCircle,
   ArrowLeft,
-  Award,
   Bell,
   BookOpen,
-  Check,
   CheckCircle2,
   ChevronDown,
   ChevronsRight,
   Clock,
-  ExternalLink,
   FileCheck,
   FileText,
   HelpCircle,
-  Key,
-  Layers,
   LayoutGrid,
-  LogOut,
   Menu,
   PanelLeftClose,
-  Plus,
-  RotateCcw,
   School,
   ScrollText,
-  Search,
   Settings,
   Sparkles,
-  User,
   Users,
   X
 } from "lucide-react";
@@ -39,7 +28,7 @@ import { Logo } from "./Logo";
 
 const navItems = [
   { label: "Home", href: "/", icon: LayoutGrid },
-  { label: "Exams", href: "/#studio", icon: ScrollText },
+  { label: "Exams", href: "/", icon: ScrollText },
   { label: "My Classroom", href: "/groups", icon: Users },
   { label: "Create Paper", href: "/assignments/new", icon: FileText },
   { label: "My Library", href: "/library", icon: Clock },
@@ -83,32 +72,7 @@ export function AppShell({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAiToolsModal, setShowAiToolsModal] = useState(false);
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: "n1",
-      title: "Assessment Mapped Successfully",
-      desc: "Class 10 Physics Unit Assessment has been extracted with 6 mapped questions.",
-      time: "2m ago",
-      read: false,
-      type: "success"
-    },
-    {
-      id: "n2",
-      title: "Sub-Parts 11(a) & 11(b) Processed",
-      desc: "Multi-page answers mapped across Page 1 & 2 with bounding boxes.",
-      time: "12m ago",
-      read: false,
-      type: "sparkle"
-    },
-    {
-      id: "n3",
-      title: "Class 10 Student Batch Imported",
-      desc: "32 answer sheets synced for Delhi Public School, Section A.",
-      time: "1h ago",
-      read: true,
-      type: "info"
-    }
-  ]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -183,8 +147,7 @@ export function AppShell({
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive =
-              (item.href === "/" && pathname === "/" && active === "home") ||
-              (item.href === "/#studio" && active === "exams") ||
+              (item.href === "/" && pathname === "/" && (active === "home" || (item.label === "Exams" && active === "exams"))) ||
               (item.href !== "/" && pathname === item.href);
 
             return (

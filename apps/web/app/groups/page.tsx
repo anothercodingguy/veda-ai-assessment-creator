@@ -3,19 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import {
-  Award,
-  CheckCircle2,
-  ChevronRight,
-  Download,
   Eye,
-  FileCheck,
-  FileText,
-  Filter,
-  Plus,
   Search,
-  Sparkles,
   Upload,
-  UserCheck,
   Users
 } from "lucide-react";
 import { AppShell } from "../../components/AppShell";
@@ -100,7 +90,7 @@ export default function ClassroomPage() {
   });
 
   return (
-    <AppShell crumb="My Classroom" active="classroom">
+    <AppShell crumb="My Classroom" active="groups">
       <div className="classroom-page-container">
         {/* Header summary banner */}
         <div className="classroom-hero-card">
@@ -204,10 +194,10 @@ export default function ClassroomPage() {
                   <td>{s.answeredCount}</td>
                   <td><small>{s.submissionDate}</small></td>
                   <td>
-                    <Link className="table-view-link" href="/">
+                    <span className="table-view-link">
                       <span>View Highlights</span>
                       <Eye size={13} />
-                    </Link>
+                    </span>
                   </td>
                 </tr>
               ))}

@@ -7,13 +7,9 @@ import {
   BookOpen,
   CheckCircle2,
   Copy,
-  Cpu,
-  FileCheck,
   FileText,
   Layers,
-  RotateCcw,
-  Sparkles,
-  Zap
+  Sparkles
 } from "lucide-react";
 import { AppShell } from "../../components/AppShell";
 

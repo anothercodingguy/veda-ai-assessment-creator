@@ -4,24 +4,18 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  AlertTriangle,
   ArrowRight,
   Award,
   BookOpen,
-  CheckCircle2,
   ChevronRight,
   Eye,
-  FileCheck,
   FileText,
   Layers,
-  Play,
   RotateCcw,
   ScrollText,
-  ShieldCheck,
   Sparkles,
   Upload,
-  Users,
-  Zap
+  Users
 } from "lucide-react";
 import { ExamUploadStudio } from "./ExamUploadStudio";
 import { TeacherIllustration } from "./TeacherIllustration";
@@ -84,13 +78,8 @@ export function HomePageView() {
                   <ArrowRight size={16} />
                 </button>
 
-                <button
-                  className="secondary-hero-btn"
-                  onClick={() => setActiveTab("studio")}
-                >
-                  <Play size={16} className="play-icon" />
-                  <span>Launch Quick Sample Demo</span>
-                </button>
+
+
 
                 <Link className="ghost-hero-btn" href="/assignments/new">
                   <FileText size={16} />

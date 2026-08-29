@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowRight, Sparkles, Upload, X } from "lucide-react";
+import { ArrowRight, Upload, X } from "lucide-react";
 import { TeacherIllustration } from "./TeacherIllustration";
 import { ExtractingAnimationView } from "./ExtractingAnimationView";
 import { MappingStudioView } from "./MappingStudioView";
@@ -14,7 +14,6 @@ type FileMeta = {
   file: File;
   name: string;
   sizeText: string;
-  pagesText: string;
 };
 
 export function ExamUploadStudio() {
@@ -41,8 +40,7 @@ export function ExamUploadStudio() {
     setQpFile({
       file,
       name: file.name,
-      sizeText: formatFileSize(file.size),
-      pagesText: file.name.toLowerCase().includes("math") ? "2 Pages" : "2 Pages"
+      sizeText: formatFileSize(file.size)
     });
     setErrorMsg("");
   };
@@ -55,34 +53,12 @@ export function ExamUploadStudio() {
     setAsFile({
       file,
       name: file.name,
-      sizeText: formatFileSize(file.size),
-      pagesText: "2 Pages"
+      sizeText: formatFileSize(file.size)
     });
     setErrorMsg("");
   };
 
-  // Quick Demo Preload
-  const handleLoadSample = () => {
-    const mockQP = new File(["Class 10 Physics Unit Assessment Questions"], "Class_10_physics_unit_test.pdf", {
-      type: "application/pdf"
-    });
-    const mockAS = new File(["Student handwritten solution sheet answers"], "student_1_answer_sheet.pdf", {
-      type: "application/pdf"
-    });
-    setQpFile({
-      file: mockQP,
-      name: "Class_10_physics_unit_test.pdf",
-      sizeText: "2.4MB",
-      pagesText: "2 Pages"
-    });
-    setAsFile({
-      file: mockAS,
-      name: "student_1_answer_sheet.pdf",
-      sizeText: "8.1MB",
-      pagesText: "2 Pages"
-    });
-    setErrorMsg("");
-  };
+
 
   const handleStartMapping = async () => {
     if (!qpFile || !asFile) return;
@@ -191,7 +167,7 @@ export function ExamUploadStudio() {
                   {qpFile.name}
                 </strong>
                 <span className="pdf-filesize">
-                  {qpFile.sizeText} • {qpFile.pagesText}
+                  {qpFile.sizeText}
                 </span>
               </div>
               <button
@@ -256,7 +232,7 @@ export function ExamUploadStudio() {
                   {asFile.name}
                 </strong>
                 <span className="pdf-filesize">
-                  {asFile.sizeText} • {asFile.pagesText}
+                  {asFile.sizeText}
                 </span>
               </div>
               <button
@@ -292,15 +268,7 @@ export function ExamUploadStudio() {
           Once both files are uploaded, you&apos;ll able to map answers with questions
         </p>
 
-        {/* Sample files quick-test shortcut */}
-        <button
-          type="button"
-          className="sample-preload-btn"
-          onClick={handleLoadSample}
-        >
-          <Sparkles size={13} />
-          <span>Load sample Question Paper & Answer Sheet (Quick Test)</span>
-        </button>
+
 
         {errorMsg && <p className="form-error">{errorMsg}</p>}
       </div>

@@ -23,17 +23,17 @@ export default function AssignmentOutputPage() {
   const assignment = activeAssignment?.id === id ? activeAssignment : undefined;
   const paper = assignment?.result;
   const status = event?.status ?? assignment?.status;
-  const teacherName = "Lakshya";
+  const teacherName = "Madhur";
 
   return (
-    <AppShell crumb="Create New" active="toolkit" backHref="/">
+    <AppShell crumb="Question Paper" active="toolkit" backHref="/assignments/new">
       <section className="output-view">
         <div className="ai-banner">
           <div>
             <Sparkles size={18} />
             <strong>
               {paper
-                ? `Certainly, ${teacherName}! Here are customized Question Paper for your ${paper.classLevel} ${paper.subject} classes.`
+                ? `Here is your customized Question Paper for Class ${paper.classLevel} ${paper.subject}.`
                 : "Preparing your customized question paper with AI."}
             </strong>
           </div>

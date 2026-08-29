@@ -3,15 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import {
-  BookOpen,
-  Calendar,
-  Clock,
-  Download,
   Eye,
   FileCheck,
   FileText,
-  Filter,
-  Plus,
   Search,
   Sparkles,
   Upload
