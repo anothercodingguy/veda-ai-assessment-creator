@@ -329,15 +329,20 @@ Please extract the questions, transcribe answers, evaluate marks, provide AI fee
 
     for (const model of candidateModels) {
       try {
-        const response = await client.chat.completions.create({
+        const payload: any = {
           model,
           temperature: 0.2,
-          response_format: { type: "json_object" },
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userContent }
           ]
-        });
+        };
+        // Groq Vision models do not support json_object format
+        if (!isVisionRequired) {
+          payload.response_format = { type: "json_object" };
+        }
+
+        const response = await client.chat.completions.create(payload);
 
         content = response.choices[0]?.message?.content ?? null;
         if (content) break;

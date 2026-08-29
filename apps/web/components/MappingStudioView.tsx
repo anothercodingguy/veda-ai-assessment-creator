@@ -15,6 +15,7 @@ import {
   type AssessmentExtractionPayload,
   type ExtractedQuestionItem
 } from "@veda/shared";
+import { PdfCanvasRenderer } from "./PdfCanvasRenderer";
 
 type MappingStudioViewProps = {
   data: AssessmentExtractionPayload;
@@ -43,12 +44,16 @@ export function MappingStudioView({
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Generate image URL if answer sheet is an image
+  const isAnswerSheetPdf = useMemo(() => {
+    return answerSheetFile && (answerSheetFile.type === "application/pdf" || answerSheetFile.name.toLowerCase().endsWith(".pdf"));
+  }, [answerSheetFile]);
+
   const answerSheetImageUrl = useMemo(() => {
-    if (answerSheetFile && (answerSheetFile.type.startsWith("image/") || /\.(png|jpg|jpeg|webp)$/i.test(answerSheetFile.name))) {
+    if (answerSheetFile && !isAnswerSheetPdf && (answerSheetFile.type.startsWith("image/") || /\.(png|jpg|jpeg|webp)$/i.test(answerSheetFile.name))) {
       return URL.createObjectURL(answerSheetFile);
     }
     return null;
-  }, [answerSheetFile]);
+  }, [answerSheetFile, isAnswerSheetPdf]);
 
   // Clean up object URL
   useEffect(() => {
@@ -263,15 +268,19 @@ export function MappingStudioView({
               transformOrigin: "top center"
             }}
           >
-            {/* If an image was uploaded, render the real uploaded image with bounding boxes */}
-            {answerSheetImageUrl ? (
-              <div className="uploaded-image-canvas-wrapper">
-                <img
-                  src={answerSheetImageUrl}
-                  alt="Student Answer Sheet"
-                  className="uploaded-sheet-img"
-                />
-                {/* Overlay Bounding Boxes on the image */}
+            {/* If an image or PDF was uploaded, render it with bounding boxes */}
+            {answerSheetImageUrl || isAnswerSheetPdf ? (
+              <div className="uploaded-image-canvas-wrapper" style={{ position: "relative" }}>
+                {answerSheetImageUrl ? (
+                  <img
+                    src={answerSheetImageUrl}
+                    alt="Student Answer Sheet"
+                    className="uploaded-sheet-img"
+                  />
+                ) : (
+                  <PdfCanvasRenderer file={answerSheetFile!} pageNumber={currentPage} />
+                )}
+                {/* Overlay Bounding Boxes on the image/canvas */}
                 {questions.map((q) => {
                   const regionsOnPage = q.regions.filter((r) => r.pageNumber === currentPage);
                   const isTarget = q.id === activeQuestion?.id;
