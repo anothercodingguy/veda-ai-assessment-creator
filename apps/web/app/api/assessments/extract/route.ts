@@ -183,17 +183,26 @@ function normalizePayload(
           ? "Accurate answer matching rubric criteria."
           : `Awarded ${awardedMarks}/${maxMarks} marks based on evaluation criteria.`;
 
-    const estimatedPage = Math.max(1, Number(q?.pageNumber) || Math.floor(idx / 3) + 1);
-    const posOnPage = idx % 3;
+    const isUnattempted =
+      status === "unanswered" ||
+      awardedMarks === 0 ||
+      !transcribedAnswer ||
+      /unattempted|no answer|not attempted/i.test(transcribedAnswer);
 
-    const rawRegions = Array.isArray(q?.regions) ? q.regions : [];
-    const regions = rawRegions.length > 0
-      ? rawRegions.map((r: any, rIdx: number) => {
-          const rPage = Math.max(1, Number(r?.pageNumber) || estimatedPage);
+    // Only assign bounding box regions if the question was actually attempted by the student
+    let regions: any[] = [];
+    if (!isUnattempted) {
+      const estimatedPage = Math.max(2, Number(q?.pageNumber) || Math.floor(idx / 3) + 2);
+      const posOnPage = idx % 3;
+
+      const rawRegions = Array.isArray(q?.regions) ? q.regions : [];
+      if (rawRegions.length > 0) {
+        regions = rawRegions.map((r: any) => {
+          const rPage = Math.max(2, Number(r?.pageNumber) || estimatedPage);
           const rawTop = Number(r?.boundingBox?.top);
           const safeTop = !isNaN(rawTop) && rawTop > 0 && rawTop < 90
             ? rawTop
-            : 10 + posOnPage * 28;
+            : 12 + posOnPage * 26;
           const rawHeight = Number(r?.boundingBox?.height);
           const safeHeight = !isNaN(rawHeight) && rawHeight > 4 && rawHeight < 40
             ? rawHeight
@@ -209,12 +218,13 @@ function normalizePayload(
             },
             label: typeof r?.label === "string" ? r.label : `Q${number}`
           };
-        })
-      : [
+        });
+      } else {
+        regions = [
           {
             pageNumber: estimatedPage,
             boundingBox: {
-              top: clamp(10 + posOnPage * 28, 5, 80),
+              top: clamp(12 + posOnPage * 26, 5, 80),
               left: 6,
               width: 88,
               height: 22
@@ -222,6 +232,8 @@ function normalizePayload(
             label: `Q${number}`
           }
         ];
+      }
+    }
 
     return {
       id,
@@ -354,12 +366,13 @@ Analyze the uploaded Question Paper and Student Answer Sheet.
 
 TASK RULES:
 1. Extract ALL questions from the question paper in exact printed order. If there are sub-parts (e.g. 11 (a), 11 (b)), treat each as an independent item.
-2. Locate and transcribe the student's handwritten solution for each question from the answer sheet.
-3. If a question is skipped or unattempted by the student, mark status as "unanswered", set awardedMarks to 0, and note that the student did not attempt this question.
-4. If an answer is fully correct according to standard curriculum rubrics, mark status as "answered" and award full marks.
-5. If an answer is partially correct (e.g. missing condition, calculation slip, incomplete diagram), mark status as "partial" and award partial marks.
-6. Provide clear, constructive "aiFeedback" for each question explaining the evaluation and mark breakdown.
-7. Assign bounding box coordinates on the answer sheet (top, left, width, height as percentages 0-100, and pageNumber starting from 1).
+2. Locate and transcribe the student's handwritten solution for each question from the answer sheet. For subjective answers, provide the complete transcribed student response.
+3. For attempted questions, evaluate accurately against standard curriculum rubrics:
+   - Award full marks for fully correct answers (status: "answered").
+   - Award partial marks for partially correct answers with reasoning (status: "partial").
+4. For unattempted questions, set status: "unanswered", awardedMarks: 0, transcribedAnswer: "[Unattempted by student]", and regions: [] (NEVER assign bounding boxes to unattempted questions).
+5. For attempted questions, assign bounding box coordinates on the answer sheet starting from Page 2 onwards (Page 1 is the title/cover sheet). Distribute 2-3 questions per page cleanly so bounding boxes never overlap (top: 12% to 75%, left: 6%, width: 88%, height: 20-25%).
+6. Provide clear, constructive "aiFeedback" for each question explaining the marks awarded.
 
 You must return strictly valid JSON matching this structure:
 {

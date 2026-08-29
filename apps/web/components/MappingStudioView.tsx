@@ -306,8 +306,11 @@ export function MappingStudioView({
                     onLoadDoc={(pages) => setPdfTotalPages(pages)}
                   />
                 )}
-                {/* Overlay Bounding Boxes on the image/canvas */}
+                {/* Overlay Bounding Boxes only for attempted questions on this page */}
                 {questions.map((q) => {
+                  if (q.status === "unanswered" || !q.regions || q.regions.length === 0) {
+                    return null;
+                  }
                   const regionsOnPage = (q.regions || []).filter((r) => r.pageNumber === currentPage);
                   const isTarget = q.id === activeQuestion?.id;
 

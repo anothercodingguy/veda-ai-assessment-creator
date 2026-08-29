@@ -2263,19 +2263,29 @@ button:disabled {
   justify-content: space-between;
   background: #27272a;
   color: #ffffff;
-  padding: 10px 18px;
+  padding: 10px 14px;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sheet-title-text {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 0%;
+  min-width: 80px;
 }
 
 .sheet-toolbar-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .zoom-pill-group,
@@ -2284,11 +2294,13 @@ button:disabled {
   align-items: center;
   gap: 6px;
   background: #3f3f46;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   color: #ffffff;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .zoom-btn,
@@ -2296,15 +2308,18 @@ button:disabled {
   background: transparent;
   border: 0;
   color: #d4d4d8;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  padding: 1px;
+  padding: 2px 4px;
+  border-radius: 4px;
 }
 
 .zoom-btn:hover,
 .page-nav-btn:hover:not(:disabled) {
   color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .zoom-btn:disabled,
