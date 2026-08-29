@@ -7,17 +7,18 @@
     "packages/*"
   ],
   "scripts": {
-    "postinstall": "npm run build -w @veda/shared",
     "dev": "npm run dev -w @veda/web",
     "dev:web": "npm run dev -w @veda/web",
-    "build": "npm run build -w @veda/shared && npm run build -w @veda/web",
+    "build": "npm run build -w @veda/web",
     "test": "npm run test -ws --if-present",
     "typecheck": "npm run typecheck -ws --if-present",
     "lint": "npm run lint -ws --if-present"
   },
+  "dependencies": {
+    "typescript": "^5.8.3"
+  },
   "devDependencies": {
     "concurrently": "^9.1.2",
-    "typescript": "^5.8.3",
     "vitest": "^3.1.4"
   }
 }
