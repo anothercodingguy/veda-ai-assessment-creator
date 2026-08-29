@@ -97,9 +97,16 @@ export async function POST(request: Request) {
     });
 
     const isVisionRequired = Boolean(qpBase64 || asBase64);
-    const model = isVisionRequired
-      ? "llama-3.2-11b-vision-preview"
-      : process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+    const candidateModels = isVisionRequired
+      ? ["llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview", "openai/gpt-oss-120b"]
+      : [
+          process.env.GROQ_MODEL,
+          "openai/gpt-oss-120b",
+          "openai/gpt-oss-20b",
+          "qwen/qwen3.8-27b",
+          "llama-3.3-70b-versatile",
+          "groq/compound"
+        ].filter(Boolean) as string[];
 
     const systemPrompt = `
 You are an expert AI Examination Assessment Engine.
@@ -168,19 +175,31 @@ Please extract the questions, transcribe answers, evaluate marks, provide AI fee
         ]
       : userPromptText;
 
-    const response = await client.chat.completions.create({
-      model,
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userContent }
-      ]
-    });
+    let content: string | null = null;
+    let lastError: any = null;
 
-    const content = response.choices[0]?.message?.content;
+    for (const model of candidateModels) {
+      try {
+        const response = await client.chat.completions.create({
+          model,
+          temperature: 0.2,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent }
+          ]
+        });
+
+        content = response.choices[0]?.message?.content ?? null;
+        if (content) break;
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[extract-api] Model ${model} failed, trying next candidate:`, err.message);
+      }
+    }
+
     if (!content) {
-      throw new Error("Groq returned an empty response. Please verify the uploaded documents and retry.");
+      throw lastError || new Error("Groq returned an empty response. Please verify the uploaded documents and retry.");
     }
 
     const cleanJson = content.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "");
