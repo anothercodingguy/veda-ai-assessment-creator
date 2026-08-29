@@ -1,7 +1,7 @@
 import { type AssessmentExtractionPayload } from "@veda/shared";
 
 async function optimizeImageForUpload(file: File): Promise<File> {
-  if (typeof window === "undefined" || !file.type.startsWith("image/") || file.size < 1.2 * 1024 * 1024) {
+  if (typeof window === "undefined" || !file.type.startsWith("image/")) {
     return file;
   }
 
@@ -12,7 +12,7 @@ async function optimizeImageForUpload(file: File): Promise<File> {
       URL.revokeObjectURL(url);
       const canvas = document.createElement("canvas");
       let { width, height } = img;
-      const maxDim = 1800;
+      const maxDim = 1100;
       if (width > maxDim || height > maxDim) {
         if (width > height) {
           height = Math.round((height * maxDim) / width);
@@ -29,14 +29,14 @@ async function optimizeImageForUpload(file: File): Promise<File> {
       ctx.drawImage(img, 0, 0, width, height);
       canvas.toBlob(
         (blob) => {
-          if (blob && blob.size < file.size) {
+          if (blob) {
             resolve(new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: "image/jpeg" }));
           } else {
             resolve(file);
           }
         },
         "image/jpeg",
-        0.85
+        0.65
       );
     };
     img.onerror = () => {
@@ -56,7 +56,7 @@ async function extractPdfTextClient(file: File): Promise<string> {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let fullText = "";
-    const maxPages = Math.min(pdf.numPages, 35);
+    const maxPages = Math.min(pdf.numPages, 30);
     for (let i = 1; i <= maxPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
@@ -85,7 +85,7 @@ async function extractDocumentVisualPages(
         URL.revokeObjectURL(url);
         const canvas = document.createElement("canvas");
         let { width, height } = img;
-        const maxDim = 1000;
+        const maxDim = 800;
         if (width > maxDim || height > maxDim) {
           if (width > height) {
             height = Math.round((height * maxDim) / width);
@@ -100,7 +100,7 @@ async function extractDocumentVisualPages(
         const ctx = canvas.getContext("2d");
         if (!ctx) return resolve([]);
         ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
         resolve([{ dataUrl, pageNumber: 1 }]);
       };
       img.onerror = () => {
@@ -124,7 +124,7 @@ async function extractDocumentVisualPages(
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.0 });
         const canvas = document.createElement("canvas");
-        const maxDim = 900;
+        const maxDim = 720;
         let scale = 1.0;
         if (viewport.width > maxDim) {
           scale = maxDim / viewport.width;
@@ -137,7 +137,7 @@ async function extractDocumentVisualPages(
         if (!ctx) continue;
 
         await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.55);
         pages.push({ dataUrl, pageNumber: i });
       }
       return pages;
@@ -167,17 +167,17 @@ export async function processAssessmentExtraction(
   const [qpExtractedText, asExtractedText, qpVisualPages, asVisualPages] = await Promise.all([
     extractPdfTextClient(qpFile),
     extractPdfTextClient(asFile),
-    extractDocumentVisualPages(qpFile, 4),
-    extractDocumentVisualPages(asFile, 8)
+    extractDocumentVisualPages(qpFile, 3),
+    extractDocumentVisualPages(asFile, 6)
   ]);
 
   // Stage 2: Question Extraction in Printed Order
   onProgress?.("Extracting questions in printed order (preserving sub-parts)...", 45);
-  await new Promise((r) => setTimeout(r, 250));
+  await new Promise((r) => setTimeout(r, 200));
 
   // Stage 3: Handwritten Answer Transcription
   onProgress?.("Transcribing student handwritten answers across pages...", 70);
-  await new Promise((r) => setTimeout(r, 250));
+  await new Promise((r) => setTimeout(r, 200));
 
   // Stage 4: Answer Mapping & Out-of-Order Detection
   onProgress?.("Mapping answers to questions (handling out-of-order answers & spans)...", 88);
@@ -186,9 +186,20 @@ export async function processAssessmentExtraction(
     apiKey?.trim() ||
     (typeof window !== "undefined" ? localStorage.getItem("veda_gemini_api_key") || "" : "");
 
+  // If text/pages are extracted from large PDF files, avoid sending redundant multi-MB raw PDF binaries
+  const finalQP =
+    (qpExtractedText || qpVisualPages.length > 0) && optimizedQP.size > 250 * 1024
+      ? new File(["PDF_TEXT_EXTRACTED"], qpFile.name, { type: "application/pdf" })
+      : optimizedQP;
+
+  const finalAS =
+    (asExtractedText || asVisualPages.length > 0) && optimizedAS.size > 250 * 1024
+      ? new File(["PDF_TEXT_EXTRACTED"], asFile.name, { type: "application/pdf" })
+      : optimizedAS;
+
   const formData = new FormData();
-  formData.append("questionPaper", optimizedQP);
-  formData.append("answerSheet", optimizedAS);
+  formData.append("questionPaper", finalQP);
+  formData.append("answerSheet", finalAS);
   if (qpExtractedText) formData.append("qpText", qpExtractedText);
   if (asExtractedText) formData.append("asText", asExtractedText);
   if (qpVisualPages.length > 0) formData.append("qpImages", JSON.stringify(qpVisualPages));
