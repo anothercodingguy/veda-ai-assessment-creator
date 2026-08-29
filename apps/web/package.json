@@ -1,0 +1,29 @@
+{
+  "name": "@veda/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@veda/shared": "file:../../packages/shared",
+    "lucide-react": "^0.511.0",
+    "next": "^15.3.3",
+    "openai": "^4.103.0",
+    "pdfjs-dist": "^4.10.38",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zod": "^3.25.28",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5"
+  }
+}

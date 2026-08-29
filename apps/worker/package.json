@@ -1,0 +1,29 @@
+{
+  "name": "@veda/worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@veda/shared": "file:../../packages/shared",
+    "bullmq": "^5.53.2",
+    "dotenv": "^16.5.0",
+    "ioredis": "^5.6.1",
+    "mongoose": "^8.15.0",
+    "openai": "^4.103.0",
+    "pdfkit": "^0.16.0",
+    "zod": "^3.25.28"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "@types/pdfkit": "^0.13.9",
+    "tsx": "^4.19.4",
+    "vitest": "^3.1.4"
+  }
+}
