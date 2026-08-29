@@ -2,304 +2,209 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowRight,
-  Award,
   BookOpen,
-  ChevronRight,
-  Eye,
   FileText,
   Layers,
-  RotateCcw,
   ScrollText,
+  Settings,
   Sparkles,
   Upload,
   Users
 } from "lucide-react";
 import { ExamUploadStudio } from "./ExamUploadStudio";
-import { TeacherIllustration } from "./TeacherIllustration";
 
 export function HomePageView() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"overview" | "studio">("overview");
+  const [activeTab, setActiveTab] = useState<"studio" | "tools">("studio");
 
   return (
     <div className="home-dashboard-container">
       {/* Top Tab Switcher */}
       <div className="home-tabs-bar">
         <button
-          className={`home-tab-btn ${activeTab === "overview" ? "active" : ""}`}
-          onClick={() => setActiveTab("overview")}
-        >
-          <Sparkles size={16} />
-          <span>Platform Overview & Features</span>
-        </button>
-
-        <button
+          type="button"
           className={`home-tab-btn ${activeTab === "studio" ? "active" : ""}`}
           onClick={() => setActiveTab("studio")}
         >
-          <ScrollText size={16} />
-          <span>Exams Upload & Mapping Studio</span>
+          <Upload size={16} />
+          <span>Upload & Mapping Studio</span>
+        </button>
+
+        <button
+          type="button"
+          className={`home-tab-btn ${activeTab === "tools" ? "active" : ""}`}
+          onClick={() => setActiveTab("tools")}
+        >
+          <Sparkles size={16} />
+          <span>AI Tools Suite</span>
         </button>
       </div>
 
       {activeTab === "studio" ? (
-        <ExamUploadStudio />
+        <div className="studio-tab-content">
+          <ExamUploadStudio />
+
+          {/* Quick Tools Access Strip Below Studio */}
+          <div className="quick-tools-strip">
+            <h3 className="quick-tools-title">Platform Tools</h3>
+            <div className="quick-tools-grid">
+              <Link className="quick-tool-card" href="/assignments/new">
+                <div className="quick-tool-icon orange">
+                  <FileText size={18} />
+                </div>
+                <div className="quick-tool-info">
+                  <strong>Create Exam Paper</strong>
+                  <span>CBSE & ICSE blueprint paper generator</span>
+                </div>
+                <ArrowRight size={15} className="quick-tool-arrow" />
+              </Link>
+
+              <Link className="quick-tool-card" href="/toolkit">
+                <div className="quick-tool-icon purple">
+                  <Sparkles size={18} />
+                </div>
+                <div className="quick-tool-info">
+                  <strong>AI Teacher&apos;s Toolkit</strong>
+                  <span>Automated rubrics & formula formatter</span>
+                </div>
+                <ArrowRight size={15} className="quick-tool-arrow" />
+              </Link>
+
+              <Link className="quick-tool-card" href="/groups">
+                <div className="quick-tool-icon green">
+                  <Users size={18} />
+                </div>
+                <div className="quick-tool-info">
+                  <strong>My Classroom</strong>
+                  <span>Batch answer sheets & grade records</span>
+                </div>
+                <ArrowRight size={15} className="quick-tool-arrow" />
+              </Link>
+
+              <Link className="quick-tool-card" href="/library">
+                <div className="quick-tool-icon blue">
+                  <BookOpen size={18} />
+                </div>
+                <div className="quick-tool-info">
+                  <strong>My Library</strong>
+                  <span>Question banks & past assessments</span>
+                </div>
+                <ArrowRight size={15} className="quick-tool-arrow" />
+              </Link>
+            </div>
+          </div>
+        </div>
       ) : (
-        <section className="overview-content">
-          {/* Hero Banner */}
-          <div className="hero-feature-card">
-            <div className="hero-content-left">
-              <div className="hero-badge">
-                <Sparkles size={14} />
-                <span>Next-Gen AI Assessment Intelligence • DPS Bokaro</span>
+        /* Tools Suite Directory */
+        <div className="tools-suite-directory">
+          <div className="tools-suite-header">
+            <h2>VedaAI Teacher Tools</h2>
+            <p>Select a tool to launch and streamline your academic workflow.</p>
+          </div>
+
+          <div className="tools-suite-grid">
+            <div className="tool-suite-card primary-highlight">
+              <div className="tool-suite-icon orange">
+                <Upload size={24} />
               </div>
-
-              <h1 className="hero-main-title">
-                AI Assessment Extraction & <span className="highlight-text-pill">Answer Mapping</span> Studio
-              </h1>
-
-              <p className="hero-description">
-                Extract questions in printed order, transcribe handwritten student answers,
-                highlight exact answer regions with <strong>interactive green bounding boxes</strong>,
-                and generate instant rubric-backed grading.
-              </p>
-
-              {/* Quick Action Buttons */}
-              <div className="hero-actions-row">
+              <div className="tool-suite-details">
+                <h3>Assessment Extraction & Mapping Studio</h3>
+                <p>
+                  Upload Question Papers and Student Answer Sheets to extract questions in printed order, transcribe handwritten responses, and generate rubric-backed evaluations with Groq.
+                </p>
                 <button
-                  className="primary-hero-btn"
+                  type="button"
+                  className="primary-pill-compact"
                   onClick={() => setActiveTab("studio")}
                 >
-                  <Upload size={17} />
-                  <span>Open Upload & Mapping Studio</span>
-                  <ArrowRight size={16} />
+                  <span>Open Mapping Studio</span>
+                  <ArrowRight size={15} />
                 </button>
+              </div>
+            </div>
 
-
-
-
-                <Link className="ghost-hero-btn" href="/assignments/new">
-                  <FileText size={16} />
+            <div className="tool-suite-card">
+              <div className="tool-suite-icon blue">
+                <FileText size={24} />
+              </div>
+              <div className="tool-suite-details">
+                <h3>CBSE & ICSE Question Paper Generator</h3>
+                <p>
+                  Create balanced examination papers with question type distribution, difficulty breakdown (Easy / Moderate / Hard), detailed answer keys, and vector PDF exports.
+                </p>
+                <Link className="secondary-pill-compact" href="/assignments/new">
                   <span>Create Question Paper</span>
+                  <ArrowRight size={15} />
                 </Link>
               </div>
             </div>
 
-            <div className="hero-graphic-right">
-              <TeacherIllustration />
+            <div className="tool-suite-card">
+              <div className="tool-suite-icon purple">
+                <Sparkles size={24} />
+              </div>
+              <div className="tool-suite-details">
+                <h3>AI Teacher&apos;s Toolkit</h3>
+                <p>
+                  Generate subjective grading rubrics with step-wise point distribution, LaTeX equations, and pedagogy accelerators.
+                </p>
+                <Link className="secondary-pill-compact" href="/toolkit">
+                  <span>Open Toolkit</span>
+                  <ArrowRight size={15} />
+                </Link>
+              </div>
+            </div>
+
+            <div className="tool-suite-card">
+              <div className="tool-suite-icon green">
+                <Users size={24} />
+              </div>
+              <div className="tool-suite-details">
+                <h3>My Classroom & Student Roster</h3>
+                <p>
+                  Manage class batches, track student submission statuses, view average scores, and inspect individual answer sheet mappings.
+                </p>
+                <Link className="secondary-pill-compact" href="/groups">
+                  <span>Open Classroom</span>
+                  <ArrowRight size={15} />
+                </Link>
+              </div>
+            </div>
+
+            <div className="tool-suite-card">
+              <div className="tool-suite-icon orange">
+                <BookOpen size={24} />
+              </div>
+              <div className="tool-suite-details">
+                <h3>Exam Library & Archives</h3>
+                <p>
+                  Access your repository of created question papers, extracted assessments, and exported answer keys.
+                </p>
+                <Link className="secondary-pill-compact" href="/library">
+                  <span>Open Library</span>
+                  <ArrowRight size={15} />
+                </Link>
+              </div>
+            </div>
+
+            <div className="tool-suite-card">
+              <div className="tool-suite-icon dark">
+                <Settings size={24} />
+              </div>
+              <div className="tool-suite-details">
+                <h3>System Settings & Groq API Config</h3>
+                <p>
+                  Configure your Groq API key, default AI evaluation models, school affiliation details, and grading strictness.
+                </p>
+                <Link className="secondary-pill-compact" href="/settings">
+                  <span>Open Settings</span>
+                  <ArrowRight size={15} />
+                </Link>
+              </div>
             </div>
           </div>
-
-          {/* Key Metrics / Highlights Strip */}
-          <div className="system-metrics-grid">
-            <div className="metric-box">
-              <div className="metric-icon-box orange">
-                <Layers size={18} />
-              </div>
-              <div>
-                <strong>Sub-Part Splitting</strong>
-                <span>11 (a) & 11 (b) treated as separate entries</span>
-              </div>
-            </div>
-
-            <div className="metric-box">
-              <div className="metric-icon-box green">
-                <Eye size={18} />
-              </div>
-              <div>
-                <strong>Visual Bounding Box</strong>
-                <span>Interactive green highlighter overlay</span>
-              </div>
-            </div>
-
-            <div className="metric-box">
-              <div className="metric-icon-box purple">
-                <RotateCcw size={18} />
-              </div>
-              <div>
-                <strong>Out-of-Order Engine</strong>
-                <span>Auto-matches answers written out of sequence</span>
-              </div>
-            </div>
-
-            <div className="metric-box">
-              <div className="metric-icon-box blue">
-                <Award size={18} />
-              </div>
-              <div>
-                <strong>AI Rubric Grading</strong>
-                <span>Question-by-question scoring & feedback</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Feature Showcase Grid */}
-          <div className="features-section-header">
-            <div>
-              <h2>All Assessment Intelligence Features</h2>
-              <p>Everything built into VedaAI to automate exam evaluation and question extraction.</p>
-            </div>
-          </div>
-
-          <div className="features-showcase-grid">
-            {/* Feature 1: Dual Upload */}
-            <div className="feature-card">
-              <div className="feature-card-header">
-                <div className="feature-icon-wrapper orange">
-                  <Upload size={22} />
-                </div>
-                <span className="feature-status-pill">Active</span>
-              </div>
-              <h3>Dual Upload Pipeline</h3>
-              <p>
-                Upload both the <strong>Question Paper</strong> and <strong>Student Handwritten Answer Sheet</strong> in PDF or image formats (up to 10MB each) with live OCR progress tracking.
-              </p>
-              <button
-                className="feature-action-link"
-                onClick={() => setActiveTab("studio")}
-              >
-                <span>Launch Dual Upload Studio</span>
-                <ChevronRight size={15} />
-              </button>
-            </div>
-
-            {/* Feature 2: Sub-Part Splitting */}
-            <div className="feature-card">
-              <div className="feature-card-header">
-                <div className="feature-icon-wrapper purple">
-                  <Layers size={22} />
-                </div>
-                <span className="feature-status-pill">Requirement #2</span>
-              </div>
-              <h3>Sub-Part Splitting & Order</h3>
-              <p>
-                Extracts questions in the exact printed order while automatically identifying labelled sub-parts like <code>11 (a)</code> and <code>11 (b)</code> as independent selectable entries.
-              </p>
-              <button
-                className="feature-action-link"
-                onClick={() => setActiveTab("studio")}
-              >
-                <span>Inspect Sub-Parts (11a & 11b)</span>
-                <ChevronRight size={15} />
-              </button>
-            </div>
-
-            {/* Feature 3: Visual Bounding-Box Highlighter */}
-            <div className="feature-card">
-              <div className="feature-card-header">
-                <div className="feature-icon-wrapper green">
-                  <Eye size={22} />
-                </div>
-                <span className="feature-status-pill">Interactive</span>
-              </div>
-              <h3>Visual Bounding Box Highlighter</h3>
-              <p>
-                Click any question to pan to the student answer sheet canvas and draw <strong>glowing green bounding box highlights</strong> over the mapped response region.
-              </p>
-              <button
-                className="feature-action-link"
-                onClick={() => setActiveTab("studio")}
-              >
-                <span>View Bounding-Box Studio</span>
-                <ChevronRight size={15} />
-              </button>
-            </div>
-
-            {/* Feature 4: Multi-Page & Out-of-Order */}
-            <div className="feature-card">
-              <div className="feature-card-header">
-                <div className="feature-icon-wrapper red">
-                  <RotateCcw size={22} />
-                </div>
-                <span className="feature-status-pill">AI Mapping</span>
-              </div>
-              <h3>Multi-Page Spans & Out-of-Order</h3>
-              <p>
-                Handles multi-page answer spans (e.g. <code>Q11 (b)</code> spanning Page 1 and 2), questions answered out of order (Q3 before Q2), and unattempted/skipped questions.
-              </p>
-              <button
-                className="feature-action-link"
-                onClick={() => setActiveTab("studio")}
-              >
-                <span>Test Multi-Page Mapping</span>
-                <ChevronRight size={15} />
-              </button>
-            </div>
-
-            {/* Feature 5: AI Grading & Diagnostic Feedback */}
-            <div className="feature-card">
-              <div className="feature-card-header">
-                <div className="feature-icon-wrapper gold">
-                  <Sparkles size={22} />
-                </div>
-                <span className="feature-status-pill">Evaluation</span>
-              </div>
-              <h3>AI Grading & Rubric Scoring</h3>
-              <p>
-                Generates instant step-by-step scoring, diagnostic feedback highlighting missing conditions, and interactive teacher mark adjusters with total recalculation.
-              </p>
-              <button
-                className="feature-action-link"
-                onClick={() => setActiveTab("studio")}
-              >
-                <span>Review Grading Inspector</span>
-                <ChevronRight size={15} />
-              </button>
-            </div>
-
-            {/* Feature 6: Question Paper Generator */}
-            <div className="feature-card">
-              <div className="feature-card-header">
-                <div className="feature-icon-wrapper blue">
-                  <FileText size={22} />
-                </div>
-                <span className="feature-status-pill">Creator</span>
-              </div>
-              <h3>CBSE & ICSE Paper Generator</h3>
-              <p>
-                Create standard exam papers with blueprints, difficulty breakdown (Easy / Moderate / Hard), detailed answer keys, and vector PDF exports.
-              </p>
-              <Link className="feature-action-link" href="/assignments/new">
-                <span>Create New Exam Paper</span>
-                <ChevronRight size={15} />
-              </Link>
-            </div>
-          </div>
-
-          {/* Teacher Toolkit & Classroom Quick Access */}
-          <div className="bottom-shortcuts-grid">
-            <div className="shortcut-card classroom-shortcut">
-              <div className="shortcut-text">
-                <Users size={22} className="shortcut-icon" />
-                <div>
-                  <strong>Delhi Public School Classroom Roster</strong>
-                  <p>Manage student batches, imported answer sheets, and grade records.</p>
-                </div>
-              </div>
-              <Link className="secondary-pill-compact" href="/groups">
-                <span>Open Classroom</span>
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            <div className="shortcut-card toolkit-shortcut">
-              <div className="shortcut-text">
-                <BookOpen size={22} className="shortcut-icon" />
-                <div>
-                  <strong>AI Teacher&apos;s Toolkit</strong>
-                  <p>Access automated rubric builders, LaTeX converters, and difficulty estimators.</p>
-                </div>
-              </div>
-              <Link className="secondary-pill-compact" href="/toolkit">
-                <span>Open Toolkit</span>
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-          </div>
-        </section>
+        </div>
       )}
     </div>
   );

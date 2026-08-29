@@ -66,11 +66,13 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
 
-  const [collapsed, setCollapsed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAiToolsModal, setShowAiToolsModal] = useState(false);
+
+  const isExpanded = isHovered;
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
@@ -102,44 +104,33 @@ export function AppShell({
   }, []);
 
   return (
-    <main className={`app-shell ${collapsed ? "sidebar-collapsed" : ""}`}>
+    <main className={`app-shell ${!isExpanded ? "sidebar-collapsed" : ""}`}>
       {/* ============================================================ */}
-      {/* SIDEBAR NAVIGATION                                           */}
+      {/* SIDEBAR NAVIGATION (Dropped/Collapsed by default, opens on hover) */}
       {/* ============================================================ */}
-      <aside className={`sidebar ${collapsed ? "is-collapsed" : ""}`}>
+      <aside
+        className={`sidebar is-collapsed ${isExpanded ? "is-hover-expanded" : ""}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         <div className="sidebar-header-row">
-          {!collapsed ? (
-            <>
-              <Logo />
-              <button
-                className="collapse-toggle-btn"
-                onClick={() => setCollapsed(true)}
-                title="Collapse sidebar"
-                aria-label="Collapse sidebar"
-              >
-                <PanelLeftClose size={18} />
-              </button>
-            </>
+          {isExpanded ? (
+            <Logo />
           ) : (
-            <button
-              className="expand-toggle-btn"
-              onClick={() => setCollapsed(false)}
-              title="Expand sidebar"
-              aria-label="Expand sidebar"
-            >
+            <div className="expand-toggle-btn" title="Hover to expand sidebar">
               <div className="veda-mini-logo">V</div>
-            </button>
+            </div>
           )}
         </div>
 
         {/* AI Teacher's Toolkit Pill Button */}
         <Link
-          className={`ai-toolkit-btn ${collapsed ? "mini" : ""}`}
+          className={`ai-toolkit-btn ${!isExpanded ? "mini" : ""}`}
           href="/toolkit"
           title="AI Teacher's Toolkit"
         >
           <Sparkles size={16} className="toolkit-sparkle" />
-          {!collapsed && <span>AI Teacher&apos;s Toolkit</span>}
+          {isExpanded && <span>AI Teacher&apos;s Toolkit</span>}
         </Link>
 
         {/* Navigation links */}
@@ -155,10 +146,10 @@ export function AppShell({
                 key={item.label}
                 className={`nav-link ${isActive ? "active" : ""}`}
                 href={item.href}
-                title={collapsed ? item.label : undefined}
+                title={!isExpanded ? item.label : undefined}
               >
                 <Icon size={19} />
-                {!collapsed && <span>{item.label}</span>}
+                {isExpanded && <span>{item.label}</span>}
               </Link>
             );
           })}
@@ -166,7 +157,7 @@ export function AppShell({
 
         {/* School Footer Card */}
         <div className="sidebar-bottom">
-          {!collapsed ? (
+          {isExpanded ? (
             <div className="school-card">
               <div className="avatar school-avatar">
                 <School size={18} />
@@ -179,14 +170,9 @@ export function AppShell({
           ) : (
             <div className="collapsed-footer">
               <div className="avatar school-avatar mini">D</div>
-              <button
-                className="expand-bottom-btn"
-                onClick={() => setCollapsed(false)}
-                title="Expand"
-                aria-label="Expand"
-              >
+              <div className="expand-bottom-btn" title="Hover to expand">
                 <ChevronsRight size={16} />
-              </button>
+              </div>
             </div>
           )}
         </div>
@@ -386,7 +372,7 @@ export function AppShell({
             >
               M
             </div>
-            <Menu size={23} onClick={() => setCollapsed(!collapsed)} />
+            <Menu size={23} onClick={() => setIsHovered(!isHovered)} />
           </div>
         </header>
 
