@@ -306,11 +306,23 @@ export async function POST(request: Request) {
 
     const clientQpText = formData.get("qpText") as string | null;
     const clientAsText = formData.get("asText") as string | null;
+    const clientQpImages = formData.get("qpImages") as string | null;
+    const clientAsImages = formData.get("asImages") as string | null;
 
     let qpText = clientQpText?.trim() || "";
     let asText = clientAsText?.trim() || "";
 
-    // Process Question Paper
+    let qpImages: { dataUrl: string; pageNumber: number }[] = [];
+    let asImages: { dataUrl: string; pageNumber: number }[] = [];
+
+    try {
+      if (clientQpImages) qpImages = JSON.parse(clientQpImages);
+      if (clientAsImages) asImages = JSON.parse(clientAsImages);
+    } catch (e) {
+      console.warn("[extract-api] Failed to parse client page images:", e);
+    }
+
+    // Process Question Paper text and images
     if (!qpText) {
       if (isQpPdf) {
         const qpBuffer = Buffer.from(await qpFile.arrayBuffer());
@@ -319,8 +331,16 @@ export async function POST(request: Request) {
         qpText = (await qpFile.text()).slice(0, 30000);
       }
     }
+    if (qpImages.length === 0 && isQpImage) {
+      const qpBuffer = Buffer.from(await qpFile.arrayBuffer());
+      const mime = qpFile.type || "image/jpeg";
+      qpImages.push({
+        dataUrl: `data:${mime};base64,${qpBuffer.toString("base64")}`,
+        pageNumber: 1
+      });
+    }
 
-    // Process Answer Sheet
+    // Process Answer Sheet text and images
     if (!asText) {
       if (isAsPdf) {
         const asBuffer = Buffer.from(await asFile.arrayBuffer());
@@ -328,6 +348,14 @@ export async function POST(request: Request) {
       } else if (!isAsImage) {
         asText = (await asFile.text()).slice(0, 30000);
       }
+    }
+    if (asImages.length === 0 && isAsImage) {
+      const asBuffer = Buffer.from(await asFile.arrayBuffer());
+      const mime = asFile.type || "image/jpeg";
+      asImages.push({
+        dataUrl: `data:${mime};base64,${asBuffer.toString("base64")}`,
+        pageNumber: 1
+      });
     }
 
     const client = new OpenAI({
@@ -345,19 +373,42 @@ export async function POST(request: Request) {
 
     const systemPrompt = `
 You are VedaAI: an expert Assessment Extraction and Evaluation Intelligence Engine.
-Analyze the uploaded Question Paper and Student Answer Sheet.
+You have been provided the Question Paper and Student Answer Sheet (including visual pages and extracted text).
 
-TASK RULES:
-1. Extract ALL questions from the question paper in exact printed order. If there are sub-parts (e.g. 11 (a), 11 (b)), treat each as an independent item.
-2. Locate and transcribe the student's handwritten solution for each question from the answer sheet. For subjective answers, provide the complete transcribed student response.
-3. For attempted questions, evaluate accurately against standard curriculum rubrics:
-   - Award full marks for fully correct answers (status: "answered").
-   - Award partial marks for partially correct answers with reasoning (status: "partial").
-4. For unattempted questions, set status: "unanswered", awardedMarks: 0, transcribedAnswer: "[Unattempted by student]", and regions: [] (NEVER assign bounding boxes to unattempted questions).
-5. For attempted questions, assign bounding box coordinates on the answer sheet starting from Page 2 onwards (Page 1 is the title/cover sheet). Distribute 2-3 questions per page cleanly so bounding boxes never overlap (top: 12% to 75%, left: 6%, width: 88%, height: 20-25%).
-6. Provide clear, constructive "aiFeedback" for each question explaining the marks awarded.
+CRITICAL TASK RULES:
+1. QUESTION EXTRACTION:
+   - Extract ALL questions from the Question Paper in exact printed order.
+   - If a question contains sub-parts (e.g., 11(a), 11(b), 12(i), 12(ii)), extract each sub-part as a distinct question item so it can be evaluated separately.
+   - Extract the exact maxMarks for each question.
 
-You must return strictly valid JSON matching this structure:
+2. ACCURATE ANSWER MAPPING (OUT-OF-ORDER AWARE):
+   - Thoroughly inspect EVERY page of the student's answer sheet (starting from Page 1).
+   - Match the student's handwritten response to the matching question:
+     * Match by question numbers written by the student (e.g. "Ans 1", "Q.2", "Section B 3", "(a)", "(b)", "5.").
+     * Match by subject content and key terminology if question numbers are missing or written ambiguously.
+     * Note: Students frequently answer questions OUT OF ORDER (for example, attempting Question 5 first on Page 1, Question 2 on Page 1, Question 1 on Page 2). Always map each answer to its true question regardless of the written sequence.
+   - Faithfully transcribe the student's actual handwritten text into "transcribedAnswer".
+
+3. ACCURATE PAGE NUMBER & BOUNDING BOX:
+   - "pageNumber" in regions MUST be the exact 1-indexed page where the student actually wrote the answer (Page 1 is the 1st page of the answer sheet).
+   - Estimate realistic boundingBox percentages { top, left, width, height } (values from 0 to 100) reflecting where on that page the answer is written.
+   - If an answer spans multiple pages (e.g. begins on Page 1 and finishes on Page 2), include a region entry for each page.
+
+4. UNATTEMPTED QUESTIONS:
+   - If a question was NOT attempted anywhere in the student's answer sheet:
+     * status: "unanswered"
+     * awardedMarks: 0
+     * transcribedAnswer: "[Unattempted by student]"
+     * regions: [] (DO NOT create bounding box regions for unattempted questions).
+
+5. RUBRIC-BASED GRADING & CONSTRUCTIVE FEEDBACK:
+   - Evaluate attempted answers against curriculum standards (CBSE / ICSE / University rubrics).
+   - "answered": full marks for fully correct answers.
+   - "partial": partial marks with clear rationale for incomplete/imperfect answers.
+   - "unanswered": 0 marks.
+   - Provide clear, constructive "aiFeedback" for every question explaining the score.
+
+Return strictly valid JSON matching this schema:
 {
   "paperTitle": string,
   "subject": string,
@@ -394,13 +445,42 @@ You must return strictly valid JSON matching this structure:
 Analyze these uploaded exam documents and perform assessment evaluation:
 
 QUESTION PAPER FILE: ${qpName}
-${qpText ? `Question Paper Content:\n${qpText}` : `[Question Paper document: ${qpName} - Extract questions according to subject curriculum]`}
+${qpText ? `Question Paper Text:\n${qpText}` : `[Question Paper document: ${qpName}]`}
 
 STUDENT ANSWER SHEET FILE: ${asName}
-${asText ? `Student Answer Sheet Content:\n${asText}` : `[Student Handwritten Answer Sheet: ${asName} - Transcribe answers and evaluate marks]`}
+${asText ? `Student Answer Sheet Text:\n${asText}` : `[Student Handwritten Answer Sheet: ${asName}]`}
 
-Please extract all questions in printed order (treating sub-parts as separate items), transcribe student handwritten answers, calculate accurate marks and feedback per question, and return the required JSON.
+Please extract all questions in printed order, accurately map student handwritten answers from the answer sheet pages, calculate accurate marks and feedback per question, and return the required JSON.
 `;
+
+    // Construct multimodal content array
+    const userContentParts: Array<
+      { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }
+    > = [{ type: "text", text: userPromptText }];
+
+    // Add Question Paper Visual Pages
+    for (const qpImg of qpImages) {
+      userContentParts.push({
+        type: "text",
+        text: `[QUESTION PAPER - PAGE ${qpImg.pageNumber}]`
+      });
+      userContentParts.push({
+        type: "image_url",
+        image_url: { url: qpImg.dataUrl }
+      });
+    }
+
+    // Add Student Answer Sheet Visual Pages
+    for (const asImg of asImages) {
+      userContentParts.push({
+        type: "text",
+        text: `[STUDENT ANSWER SHEET - PAGE ${asImg.pageNumber}]`
+      });
+      userContentParts.push({
+        type: "image_url",
+        image_url: { url: asImg.dataUrl }
+      });
+    }
 
     let content: string | null = null;
     let lastError: any = null;
@@ -414,7 +494,7 @@ Please extract all questions in printed order (treating sub-parts as separate it
           response_format: { type: "json_object" },
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: userPromptText }
+            { role: "user", content: userContentParts as any }
           ]
         });
 

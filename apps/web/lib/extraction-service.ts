@@ -70,6 +70,86 @@ async function extractPdfTextClient(file: File): Promise<string> {
   }
 }
 
+async function extractDocumentVisualPages(
+  file: File,
+  maxPages = 6
+): Promise<{ dataUrl: string; pageNumber: number }[]> {
+  if (typeof window === "undefined") return [];
+
+  // If already an image file (PNG / JPG / WEBP)
+  if (file.type.startsWith("image/") || /\.(png|jpg|jpeg|webp)$/i.test(file.name)) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        const maxDim = 1000;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve([]);
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+        resolve([{ dataUrl, pageNumber: 1 }]);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve([]);
+      };
+      img.src = url;
+    });
+  }
+
+  // If PDF file
+  if (file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf") {
+    try {
+      const pdfjsLib = await import("pdfjs-dist");
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const count = Math.min(pdf.numPages, maxPages);
+      const pages: { dataUrl: string; pageNumber: number }[] = [];
+
+      for (let i = 1; i <= count; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.0 });
+        const canvas = document.createElement("canvas");
+        const maxDim = 900;
+        let scale = 1.0;
+        if (viewport.width > maxDim) {
+          scale = maxDim / viewport.width;
+        }
+        const scaledViewport = page.getViewport({ scale });
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) continue;
+
+        await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        pages.push({ dataUrl, pageNumber: i });
+      }
+      return pages;
+    } catch (err) {
+      console.warn("[extraction-service] PDF visual extraction fallback:", err);
+      return [];
+    }
+  }
+
+  return [];
+}
+
 export async function processAssessmentExtraction(
   qpFile: File,
   asFile: File,
@@ -77,25 +157,27 @@ export async function processAssessmentExtraction(
   onProgress?: (stage: string, percent: number) => void
 ): Promise<AssessmentExtractionPayload> {
   // Stage 1: Document OCR Ingestion & Optimization
-  onProgress?.("Reading uploaded documents and running OCR text extraction...", 20);
-  
+  onProgress?.("Reading uploaded documents and rendering visual pages...", 20);
+
   const [optimizedQP, optimizedAS] = await Promise.all([
     optimizeImageForUpload(qpFile),
     optimizeImageForUpload(asFile)
   ]);
 
-  const [qpExtractedText, asExtractedText] = await Promise.all([
+  const [qpExtractedText, asExtractedText, qpVisualPages, asVisualPages] = await Promise.all([
     extractPdfTextClient(qpFile),
-    extractPdfTextClient(asFile)
+    extractPdfTextClient(asFile),
+    extractDocumentVisualPages(qpFile, 4),
+    extractDocumentVisualPages(asFile, 8)
   ]);
 
   // Stage 2: Question Extraction in Printed Order
   onProgress?.("Extracting questions in printed order (preserving sub-parts)...", 45);
-  await new Promise((r) => setTimeout(r, 350));
+  await new Promise((r) => setTimeout(r, 250));
 
   // Stage 3: Handwritten Answer Transcription
   onProgress?.("Transcribing student handwritten answers across pages...", 70);
-  await new Promise((r) => setTimeout(r, 350));
+  await new Promise((r) => setTimeout(r, 250));
 
   // Stage 4: Answer Mapping & Out-of-Order Detection
   onProgress?.("Mapping answers to questions (handling out-of-order answers & spans)...", 88);
@@ -109,6 +191,8 @@ export async function processAssessmentExtraction(
   formData.append("answerSheet", optimizedAS);
   if (qpExtractedText) formData.append("qpText", qpExtractedText);
   if (asExtractedText) formData.append("asText", asExtractedText);
+  if (qpVisualPages.length > 0) formData.append("qpImages", JSON.stringify(qpVisualPages));
+  if (asVisualPages.length > 0) formData.append("asImages", JSON.stringify(asVisualPages));
   if (effectiveApiKey) {
     formData.append("apiKey", effectiveApiKey);
   }
