@@ -235,17 +235,17 @@ function normalizePayload(
     };
   });
 
-  const totalMaxMarks =
-    questions.reduce((acc, q) => acc + q.maxMarks, 0) ||
-    Number(raw?.totalMaxMarks) ||
-    100;
+  const computedMaxMarks = questions.reduce((acc, q) => acc + q.maxMarks, 0);
+  const totalMaxMarks = Math.max(1, computedMaxMarks || Number(raw?.totalMaxMarks) || 100);
 
-  const totalScore =
-    Number(raw?.totalScore) ??
-    questions.reduce((acc, q) => acc + q.awardedMarks, 0);
+  const computedScore = questions.reduce((acc, q) => acc + q.awardedMarks, 0);
+  const totalScore = Math.max(0, Math.min(totalMaxMarks, computedScore));
 
-  const percentage =
-    totalMaxMarks > 0 ? Math.round((totalScore / totalMaxMarks) * 100) : 0;
+  const percentage = clamp(
+    totalMaxMarks > 0 ? Math.round((totalScore / totalMaxMarks) * 100) : 0,
+    0,
+    100
+  );
 
   const pageCount = Math.max(1, Number(raw?.pageCount) || 1, totalAnswerPages);
 
