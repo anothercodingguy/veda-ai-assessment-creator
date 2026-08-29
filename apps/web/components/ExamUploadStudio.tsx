@@ -92,8 +92,8 @@ export function ExamUploadStudio() {
     return (
       <MappingStudioView
         data={extractionPayload}
-        questionPaperName={qpFile?.name || "Class_10_physics_unit_test.pdf"}
-        answerSheetName={asFile?.name || "student_1_answer_sheet.pdf"}
+        questionPaperName={qpFile?.name || "Biology_Unit_Assessment.pdf"}
+        answerSheetName={asFile?.name || "Student_Answer_Sheet.pdf"}
         onReset={() => {
           setViewState("upload");
           setQpFile(null);

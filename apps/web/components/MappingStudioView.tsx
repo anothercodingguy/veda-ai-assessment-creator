@@ -1,30 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
-  AlertTriangle,
-  ArrowLeft,
-  Award,
-  CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Download,
-  ExternalLink,
-  Eye,
-  FileCheck,
-  FileText,
-  HelpCircle,
-  Layers,
-  RotateCcw,
-  Sparkles,
-  XCircle,
-  ZoomIn,
-  ZoomOut
+  ChevronUp,
+  Minus,
+  Plus,
+  Sparkles
 } from "lucide-react";
 import {
   type AssessmentExtractionPayload,
-  type ExtractedQuestionItem,
-  type UnmatchedAnswerItem
+  type ExtractedQuestionItem
 } from "@veda/shared";
 
 type MappingStudioViewProps = {
@@ -36,555 +24,449 @@ type MappingStudioViewProps = {
 
 export function MappingStudioView({
   data,
-  questionPaperName = "Class_10_maths_unit_test.pdf",
-  answerSheetName = "student_1_answer_sheet.pdf",
+  questionPaperName = "Biology_Assessment.pdf",
+  answerSheetName = "Student_Answer_Sheet.pdf",
   onReset
 }: MappingStudioViewProps) {
   const [questions, setQuestions] = useState<ExtractedQuestionItem[]>(data.questions);
-  const [activeQuestionId, setActiveQuestionId] = useState<string>(data.questions[0]?.id || "");
+  const [activeQuestionId, setActiveQuestionId] = useState<string>(data.questions[1]?.id || data.questions[0]?.id || "q2");
+  const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({
+    [data.questions[1]?.id || "q2"]: true
+  });
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
-  const [activeFilter, setActiveFilter] = useState<"all" | "answered" | "partial" | "unanswered">("all");
-  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   const activeQuestion =
     questions.find((q) => q.id === activeQuestionId) || questions[0];
 
-  const activeIndex = questions.findIndex((q) => q.id === activeQuestion?.id);
+  const totalPages = data.pageCount || 4;
 
-  // Handle switching active question
-  const selectQuestion = (q: ExtractedQuestionItem) => {
-    setActiveQuestionId(q.id);
-    if (q.regions.length > 0) {
-      // Navigate to the question's first answer page
-      setCurrentPage(q.regions[0].pageNumber);
+  const toggleExpand = (qId: string) => {
+    setExpandedQuestions((prev) => {
+      const isCurrentlyExpanded = Boolean(prev[qId]);
+      const nextState = { ...prev, [qId]: !isCurrentlyExpanded };
+      return nextState;
+    });
+
+    setActiveQuestionId(qId);
+    const targetQ = questions.find((q) => q.id === qId);
+    if (targetQ && targetQ.regions.length > 0) {
+      setCurrentPage(targetQ.regions[0].pageNumber);
     }
   };
 
-  // Score modifier
-  const handleScoreChange = (qId: string, newScore: number) => {
-    setQuestions((prev) =>
-      prev.map((item) => {
-        if (item.id === qId) {
-          const clamped = Math.max(0, Math.min(item.maxMarks, newScore));
-          const updatedStatus =
-            clamped === item.maxMarks
-              ? "answered"
-              : clamped > 0
-              ? "partial"
-              : item.status === "unanswered"
-              ? "unanswered"
-              : "partial";
-          return { ...item, awardedMarks: clamped, status: updatedStatus };
-        }
-        return item;
-      })
-    );
+  const handleExpandAll = () => {
+    const allExpanded = questions.every((q) => expandedQuestions[q.id]);
+    const newState: Record<string, boolean> = {};
+    questions.forEach((q) => {
+      newState[q.id] = !allExpanded;
+    });
+    setExpandedQuestions(newState);
   };
 
-  const totalMaxMarks = questions.reduce((sum, q) => sum + q.maxMarks, 0);
-  const totalAwardedMarks = questions.reduce((sum, q) => sum + q.awardedMarks, 0);
-  const percentage = Math.round((totalAwardedMarks / totalMaxMarks) * 100);
+  const allAreExpanded = questions.length > 0 && questions.every((q) => expandedQuestions[q.id]);
 
-  const filteredQuestions = questions.filter((q) => {
-    if (activeFilter === "all") return true;
-    return q.status === activeFilter;
-  });
+  const selectQuestionFromCanvas = (qId: string) => {
+    setActiveQuestionId(qId);
+    setExpandedQuestions((prev) => ({ ...prev, [qId]: true }));
+  };
 
-  const activeRegionsOnCurrentPage = activeQuestion?.regions.filter(
-    (r) => r.pageNumber === currentPage
-  ) || [];
+  // Scroll active bounding box into view when page/question changes
+  useEffect(() => {
+    const targetRegion = activeQuestion?.regions.find((r) => r.pageNumber === currentPage);
+    if (targetRegion && canvasRef.current) {
+      const el = canvasRef.current.querySelector(`[data-question-id="${activeQuestion.id}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }
+  }, [activeQuestionId, currentPage, activeQuestion]);
 
-  const spansMultiplePages = (activeQuestion?.regions.length || 0) > 1;
+  const getScoreBadgeClass = (awarded: number, max: number, status: string) => {
+    if (status === "unanswered" || awarded === 0) return "score-badge-red";
+    if (awarded < max) return "score-badge-orange";
+    return "score-badge-green";
+  };
 
   return (
-    <section className="mapping-studio-container">
-      {/* Studio Header Bar */}
-      <header className="studio-topbar">
-        <div className="studio-topbar-left">
-          <button className="icon-back-btn" onClick={onReset} title="Back to upload">
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <div className="studio-title-row">
-              <h2 className="studio-paper-title">{data.paperTitle}</h2>
-              <span className="exam-subject-badge">{data.subject} • {data.classLevel}</span>
-            </div>
-            <div className="studio-files-meta">
-              <span className="file-tag qp-tag">
-                <FileText size={12} /> {questionPaperName}
-              </span>
-              <span className="file-tag as-tag">
-                <FileCheck size={12} /> {answerSheetName}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="studio-topbar-right">
-          <div className="score-summary-pill" onClick={() => setShowSummaryModal(true)}>
-            <Award size={15} />
-            <span>Score:</span>
-            <strong>
-              {totalAwardedMarks} / {totalMaxMarks} ({percentage}%)
-            </strong>
-          </div>
-
-          <button className="secondary-pill-compact" onClick={() => setShowSummaryModal(true)}>
-            <Sparkles size={14} />
-            <span>AI Summary</span>
-          </button>
-
-          <button className="primary-pill-compact" onClick={onReset}>
-            <RotateCcw size={14} />
-            <span>New Scan</span>
+    <div className="biology-studio-layout">
+      {/* ============================================================ */}
+      {/* LEFT COLUMN: Extracted Questions (from question paper)       */}
+      {/* ============================================================ */}
+      <section className="extracted-questions-col">
+        <div className="questions-col-header">
+          <h2 className="questions-col-title">Extracted Questions (from question paper)</h2>
+          <button
+            type="button"
+            className="expand-all-outline-btn"
+            onClick={handleExpandAll}
+          >
+            {allAreExpanded ? "Collapse All" : "Expand All"}
           </button>
         </div>
-      </header>
 
-      {/* 3-Column Studio Grid */}
-      <div className="studio-layout">
-        {/* ============================================================ */}
-        {/* LEFT COLUMN: Questions Navigator (In Printed Order + Subparts) */}
-        {/* ============================================================ */}
-        <aside className="studio-left-panel">
-          <div className="panel-header">
-            <div>
-              <h3>Questions ({questions.length})</h3>
-              <span className="panel-sub-label">Printed order preserved</span>
-            </div>
-            <span className="ai-badge">
-              <Sparkles size={12} /> Auto-Mapped
-            </span>
-          </div>
+        <div className="questions-card-list">
+          {questions.map((q) => {
+            const isExpanded = Boolean(expandedQuestions[q.id]);
+            const isTargetActive = q.id === activeQuestion?.id;
+            const scoreClass = getScoreBadgeClass(q.awardedMarks, q.maxMarks, q.status);
 
-          {/* Filter Bar */}
-          <div className="questions-filter-tabs">
-            <button
-              className={`filter-tab-btn ${activeFilter === "all" ? "active" : ""}`}
-              onClick={() => setActiveFilter("all")}
-            >
-              All ({questions.length})
-            </button>
-            <button
-              className={`filter-tab-btn ${activeFilter === "answered" ? "active" : ""}`}
-              onClick={() => setActiveFilter("answered")}
-            >
-              Answered ({questions.filter((q) => q.status === "answered").length})
-            </button>
-            <button
-              className={`filter-tab-btn ${activeFilter === "partial" ? "active" : ""}`}
-              onClick={() => setActiveFilter("partial")}
-            >
-              Partial ({questions.filter((q) => q.status === "partial").length})
-            </button>
-            <button
-              className={`filter-tab-btn ${activeFilter === "unanswered" ? "active" : ""}`}
-              onClick={() => setActiveFilter("unanswered")}
-            >
-              Skipped ({questions.filter((q) => q.status === "unanswered").length})
-            </button>
-          </div>
-
-          {/* Questions Scrollable List */}
-          <div className="questions-scroll-list">
-            {filteredQuestions.map((q) => {
-              const isActive = q.id === activeQuestion.id;
-              const isSubpart = Boolean(q.parentQuestionNumber);
-              const isMultiPage = q.regions.length > 1;
-
-              return (
+            return (
+              <div
+                key={q.id}
+                className={`biology-question-card ${isExpanded ? "is-expanded" : ""} ${isTargetActive ? "is-active-target" : ""}`}
+              >
                 <div
-                  key={q.id}
-                  className={`question-item-card ${isActive ? "active" : ""} ${
-                    isSubpart ? "is-subpart-item" : ""
-                  }`}
-                  onClick={() => selectQuestion(q)}
+                  className="question-card-header-row"
+                  onClick={() => toggleExpand(q.id)}
                 >
-                  <div className="item-card-top">
-                    <strong className={`q-number-pill ${isSubpart ? "subpart-pill" : ""}`}>
-                      Q{q.number}
-                    </strong>
-
-                    <span className={`q-status-badge ${q.status}`}>
-                      {q.status === "answered" && <CheckCircle2 size={11} />}
-                      {q.status === "partial" && <AlertTriangle size={11} />}
-                      {q.status === "unanswered" && <XCircle size={11} />}
-                      <span>
-                        {q.status === "answered"
-                          ? "Answered"
-                          : q.status === "partial"
-                          ? "Partial"
-                          : "Unanswered"}
-                      </span>
+                  <div className="question-header-left">
+                    <span className={`question-number-circle ${isExpanded ? "orange-circle" : "dark-circle"}`}>
+                      {q.number}
                     </span>
-
-                    {isMultiPage && (
-                      <span className="multi-page-pill" title="Answer spans multiple pages">
-                        <Layers size={10} /> 2 Pages
-                      </span>
-                    )}
-
-                    <span className="q-marks-pill">
-                      {q.awardedMarks}/{q.maxMarks} M
-                    </span>
+                    <p className="question-text-title">{q.text}</p>
                   </div>
 
-                  <p className="q-text-snippet">{q.text}</p>
-
-                  <div className="item-card-footer">
-                    <span className="section-meta-tag">{q.sectionTitle}</span>
-                    {q.regions.length > 0 ? (
-                      <span className="mapped-page-tag">
-                        Page {q.regions.map((r) => r.pageNumber).join(", ")}
-                      </span>
-                    ) : (
-                      <span className="no-page-tag">Not in Answer Sheet</span>
-                    )}
+                  <div className="question-header-right">
+                    <span className={`question-score-pill ${scoreClass}`}>
+                      {q.awardedMarks}/{q.maxMarks}
+                    </span>
+                    <button
+                      type="button"
+                      className="accordion-chevron-btn"
+                      aria-label={isExpanded ? "Collapse" : "Expand"}
+                    >
+                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    </button>
                   </div>
                 </div>
-              );
-            })}
 
-            {/* Unmatched Answers Section */}
-            {data.unmatchedAnswers.length > 0 && (
-              <div className="unmatched-answers-section">
-                <div className="unmatched-header">
-                  <AlertTriangle size={13} />
-                  <span>Unmatched Responses ({data.unmatchedAnswers.length})</span>
-                </div>
-                {data.unmatchedAnswers.map((ua) => (
-                  <div
-                    key={ua.id}
-                    className="unmatched-item-card"
-                    onClick={() => setCurrentPage(ua.pageNumber)}
-                  >
-                    <span className="unmatched-tag">Page {ua.pageNumber}</span>
-                    <p className="unmatched-text">{ua.transcribedText}</p>
-                    <span className="unmatched-note">{ua.note}</span>
+                {isExpanded && (
+                  <div className="question-card-body-expanded">
+                    <div className="ai-feedback-inner-card">
+                      <strong className="ai-feedback-title">AI Feedback</strong>
+                      <p className="ai-feedback-text">
+                        {q.aiFeedback ||
+                          "Excellent work! You correctly identified the chloroplast as the organelle responsible for photosynthesis. Keep it up!"}
+                      </p>
+                    </div>
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
-        </aside>
+            );
+          })}
+        </div>
+      </section>
 
-        {/* ============================================================ */}
-        {/* CENTER COLUMN: Student Answer Sheet Document Viewer          */}
-        {/* ============================================================ */}
-        <main className="studio-center-panel">
-          {/* Canvas Navigation Toolbar */}
-          <div className="canvas-toolbar">
-            <div className="page-switcher">
+      {/* ============================================================ */}
+      {/* RIGHT COLUMN: Answer Sheet Viewer with Bounding Boxes       */}
+      {/* ============================================================ */}
+      <section className="answer-sheet-col">
+        {/* Dark Top Toolbar Header */}
+        <div className="answer-sheet-dark-toolbar">
+          <span className="sheet-title-text">Answer Sheet</span>
+
+          <div className="sheet-toolbar-controls">
+            {/* Zoom Controls */}
+            <div className="zoom-pill-group">
               <button
+                type="button"
+                className="zoom-btn"
+                onClick={() => setZoomLevel((z) => Math.max(75, z - 15))}
+                title="Zoom Out"
+              >
+                <Minus size={14} />
+              </button>
+              <span className="zoom-value">{zoomLevel}%</span>
+              <button
+                type="button"
+                className="zoom-btn"
+                onClick={() => setZoomLevel((z) => Math.min(135, z + 15))}
+                title="Zoom In"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+
+            {/* Page Navigation */}
+            <div className="page-pill-group">
+              <button
+                type="button"
+                className="page-nav-btn"
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 title="Previous Page"
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="page-indicator">
-                Page <strong>{currentPage}</strong> of <strong>{data.pageCount}</strong>
+              <span className="page-nav-value">
+                Page {currentPage} of {totalPages}
               </span>
               <button
-                disabled={currentPage >= data.pageCount}
-                onClick={() => setCurrentPage((p) => Math.min(data.pageCount, p + 1))}
+                type="button"
+                className="page-nav-btn"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 title="Next Page"
               >
                 <ChevronRight size={16} />
               </button>
             </div>
-
-            {/* Multi-page jump indicator */}
-            {spansMultiplePages && (
-              <div className="multi-page-jump-bar">
-                <span>Q{activeQuestion.number} spans:</span>
-                {activeQuestion.regions.map((r, idx) => (
-                  <button
-                    key={idx}
-                    className={`page-jump-btn ${currentPage === r.pageNumber ? "active" : ""}`}
-                    onClick={() => setCurrentPage(r.pageNumber)}
-                  >
-                    Page {r.pageNumber}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="zoom-controls">
-              <button onClick={() => setZoomLevel((z) => Math.max(70, z - 15))} title="Zoom out">
-                <ZoomOut size={16} />
-              </button>
-              <span>{zoomLevel}%</span>
-              <button onClick={() => setZoomLevel((z) => Math.min(140, z + 15))} title="Zoom in">
-                <ZoomIn size={16} />
-              </button>
-            </div>
           </div>
+        </div>
 
-          {/* Document Sheet Canvas with Highlighting Overlay */}
-          <div className="document-viewport">
-            <div
-              className="sheet-paper"
-              style={{
-                transform: `scale(${zoomLevel / 100})`,
-                transformOrigin: "top center"
-              }}
-            >
-              {/* Paper Header / Watermark lines */}
-              <div className="sheet-ruled-header">
-                <span className="sheet-rule-line" />
-                <span className="sheet-rule-line" />
-                <div className="sheet-meta-header">
-                  <span>Student Submission • Page {currentPage}</span>
-                  <span>Delhi Public School • Examination 2026</span>
-                </div>
-              </div>
+        {/* Paper Canvas */}
+        <div className="sheet-canvas-container" ref={canvasRef}>
+          <div
+            className="authentic-ruled-sheet"
+            style={{
+              transform: `scale(${zoomLevel / 100})`,
+              transformOrigin: "top center"
+            }}
+          >
+            {/* Red Left Margin Line */}
+            <div className="sheet-left-margin-line" />
 
-              {/* Simulated Ruled Page Lines */}
-              <div className="sheet-ruled-lines">
-                {Array.from({ length: 24 }).map((_, i) => (
-                  <div key={i} className="sheet-line" />
-                ))}
-              </div>
+            {/* Ruled Horizontal Lines */}
+            <div className="sheet-horizontal-lines">
+              {Array.from({ length: 32 }).map((_, i) => (
+                <div key={i} className="ruled-line" />
+              ))}
+            </div>
 
-              {/* Unanswered Notice Banner if Active Question has no region on this sheet */}
-              {activeQuestion?.status === "unanswered" && (
-                <div className="unanswered-watermark-notice">
-                  <XCircle size={18} />
-                  <div>
-                    <strong>Q{activeQuestion.number} is Unanswered</strong>
-                    <p>The student did not attempt this question on the answer sheet.</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Simulated Handwritten Answer Blocks & Highlight Regions */}
-              <div className="sheet-answers-content">
-                {questions.map((q) => {
-                  const regionsOnPage = q.regions.filter((r) => r.pageNumber === currentPage);
-                  const isTarget = q.id === activeQuestion.id;
-
-                  return regionsOnPage.map((r, rIdx) => (
-                    <div
-                      key={`${q.id}-${rIdx}`}
-                      className={`answer-highlight-region ${
-                        isTarget ? "highlight-active" : ""
-                      }`}
-                      style={{
-                        top: `${r.boundingBox.top}%`,
-                        left: `${r.boundingBox.left}%`,
-                        width: `${r.boundingBox.width}%`,
-                        minHeight: `${r.boundingBox.height}%`
-                      }}
-                      onClick={() => selectQuestion(q)}
-                    >
-                      {isTarget && (
-                        <div className="highlight-tag">
-                          <CheckCircle2 size={12} />
-                          <span>{r.label || `Answer for Q${q.number}`}</span>
+            {/* Handwritten Answer Sheet Content & Drawings */}
+            <div className="sheet-handwritten-content">
+              {currentPage === 1 && (
+                <>
+                  {/* Q1 Answer Block */}
+                  <div
+                    className="handwritten-block q1-block"
+                    onClick={() => selectQuestionFromCanvas("q1")}
+                  >
+                    <span className="handwritten-label">Q1.</span>
+                    <div className="handwritten-body">
+                      <p className="handwritten-paragraph">
+                        Photosynthesis is the process used by green plants and some other organisms to convert light energy into chemical energy.
+                      </p>
+                      <div className="handwritten-equation">
+                        <div className="equation-box">
+                          6CO<sub>2</sub> + 6H<sub>2</sub>O
+                          <span className="reaction-arrow">
+                            <span className="arrow-top">Light</span>
+                            <span className="arrow-line">────────►</span>
+                            <span className="arrow-bottom">Chlorophyll</span>
+                          </span>
+                          C<sub>6</sub>H<sub>12</sub>O<sub>6</sub> + 6O<sub>2</sub>
                         </div>
-                      )}
+                      </div>
 
-                      <div className="handwriting-preview">
-                        <strong className="ans-num">Ans {q.number}: </strong>
-                        <span>
-                          {rIdx === 0
-                            ? q.transcribedAnswer.slice(0, 180) +
-                              (q.transcribedAnswer.length > 180 ? "..." : "")
-                            : `(Continued from Page 1) ... ${q.transcribedAnswer.slice(120)}`}
-                        </span>
+                      {/* Plant Diagram */}
+                      <div className="handwritten-plant-diagram">
+                        <svg viewBox="0 0 280 140" className="plant-svg">
+                          {/* Sun */}
+                          <circle cx="95" cy="28" r="12" fill="#fbbf24" stroke="#d97706" strokeWidth="1.5" />
+                          {Array.from({ length: 8 }).map((_, i) => {
+                            const angle = (i * 45 * Math.PI) / 180;
+                            return (
+                              <line
+                                key={i}
+                                x1={95 + 16 * Math.cos(angle)}
+                                y1={28 + 16 * Math.sin(angle)}
+                                x2={95 + 23 * Math.cos(angle)}
+                                y2={28 + 23 * Math.sin(angle)}
+                                stroke="#d97706"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                              />
+                            );
+                          })}
+                          <text x="122" y="32" className="svg-annotation">Sunlight</text>
+                          <line x1="110" y1="42" x2="135" y2="70" stroke="#475569" strokeWidth="1.2" markerEnd="url(#arrow)" />
+
+                          {/* CO2 Arrow */}
+                          <text x="25" y="72" className="svg-annotation">Carbon dioxide</text>
+                          <line x1="90" y1="74" x2="120" y2="78" stroke="#475569" strokeWidth="1.2" strokeDasharray="3 2" />
+                          <polygon points="120,78 114,75 114,81" fill="#475569" />
+
+                          {/* Oxygen Arrow */}
+                          <text x="210" y="74" className="svg-annotation">Oxygen</text>
+                          <line x1="168" y1="78" x2="198" y2="74" stroke="#475569" strokeWidth="1.2" strokeDasharray="3 2" />
+                          <polygon points="198,74 192,71 192,77" fill="#475569" />
+
+                          {/* Plant Stem and Leaves */}
+                          <path d="M 145 68 Q 146 95 145 118" stroke="#15803d" strokeWidth="2.5" fill="none" />
+                          {/* Left Leaf */}
+                          <path d="M 145 82 Q 120 72 122 88 Q 135 92 145 88" fill="#86efac" stroke="#15803d" strokeWidth="1.2" />
+                          {/* Right Leaf */}
+                          <path d="M 145 80 Q 170 70 168 86 Q 155 90 145 86" fill="#86efac" stroke="#15803d" strokeWidth="1.2" />
+
+                          {/* Soil and Roots */}
+                          <line x1="115" y1="118" x2="175" y2="118" stroke="#78716c" strokeWidth="1.5" strokeDasharray="4 2" />
+                          <path d="M 145 118 Q 138 132 132 138" stroke="#78716c" strokeWidth="1.2" fill="none" />
+                          <path d="M 145 118 Q 148 130 152 137" stroke="#78716c" strokeWidth="1.2" fill="none" />
+                          <path d="M 145 118 L 145 136" stroke="#78716c" strokeWidth="1.2" fill="none" />
+                          <text x="180" y="128" className="svg-annotation">Water</text>
+                        </svg>
                       </div>
                     </div>
-                  ));
-                })}
-
-                {/* Render Unmatched scratch notes on Page 2 */}
-                {currentPage === 2 &&
-                  data.unmatchedAnswers.map((ua) =>
-                    ua.regions.map((r, idx) => (
-                      <div
-                        key={`unmatched-${idx}`}
-                        className="unmatched-highlight-region"
-                        style={{
-                          top: `${r.boundingBox.top}%`,
-                          left: `${r.boundingBox.left}%`,
-                          width: `${r.boundingBox.width}%`,
-                          minHeight: `${r.boundingBox.height}%`
-                        }}
-                      >
-                        <div className="unmatched-tag-badge">
-                          <AlertTriangle size={11} />
-                          <span>Unmatched Work</span>
-                        </div>
-                        <div className="handwriting-preview scratch-text">
-                          {ua.transcribedText}
-                        </div>
-                      </div>
-                    ))
-                  )}
-              </div>
-            </div>
-          </div>
-        </main>
-
-        {/* ============================================================ */}
-        {/* RIGHT COLUMN: Question Details, Transcription & Grading     */}
-        {/* ============================================================ */}
-        <aside className="studio-right-panel">
-          <div className="panel-header">
-            <div>
-              <h3>Grading & Evaluation</h3>
-              <span className="panel-sub-label">Question Inspector</span>
-            </div>
-            <span className="q-tag-active">Q{activeQuestion.number}</span>
-          </div>
-
-          <div className="eval-scroll-body">
-            {/* Question Text Card */}
-            <div className="eval-section">
-              <label className="eval-label">Question Text</label>
-              <div className="eval-question-box">
-                <p className="eval-q-text">{activeQuestion.text}</p>
-                <div className="eval-meta-row">
-                  <span>{activeQuestion.sectionTitle}</span>
-                  <span>Maximum Marks: {activeQuestion.maxMarks}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Transcribed Student Answer */}
-            <div className="eval-section">
-              <div className="eval-label-row">
-                <label className="eval-label">Transcribed Student Answer</label>
-                <span className={`eval-status-chip ${activeQuestion.status}`}>
-                  {activeQuestion.status === "answered"
-                    ? "✓ Answered"
-                    : activeQuestion.status === "partial"
-                    ? "⚠ Partial"
-                    : "✕ Unanswered"}
-                </span>
-              </div>
-              <div className={`eval-answer-box ${activeQuestion.status}`}>
-                <p>{activeQuestion.transcribedAnswer}</p>
-                {activeQuestion.regions.length > 0 && (
-                  <div className="eval-location-note">
-                    Mapped across Page(s):{" "}
-                    <strong>{activeQuestion.regions.map((r) => r.pageNumber).join(", ")}</strong>
                   </div>
-                )}
-              </div>
-            </div>
 
-            {/* AI Grading & Rubric Feedback */}
-            <div className="eval-section">
-              <label className="eval-label">
-                <Sparkles size={14} className="sparkle-gold" /> AI Diagnostic Feedback
-              </label>
-              <div className="eval-feedback-box">
-                <p>{activeQuestion.aiFeedback}</p>
-              </div>
-            </div>
+                  {/* Q2 Answer Block with Active Glowing Bounding Box */}
+                  <div
+                    className={`handwritten-block q2-block ${activeQuestionId === "q2" ? "target-bounding-box-active" : ""}`}
+                    data-question-id="q2"
+                    onClick={() => selectQuestionFromCanvas("q2")}
+                  >
+                    <div className="green-bounding-box-badge">Q2</div>
+                    <span className="handwritten-label">Q2.</span>
+                    <div className="handwritten-body">
+                      <p className="handwritten-paragraph">
+                        The process mainly occurs in the chloroplast of the plant cell. It has two main stages:
+                      </p>
+                      <ol className="handwritten-list">
+                        <li>
+                          <strong>1. Light reaction</strong> – Captures light energy.
+                        </li>
+                        <li>
+                          <strong>2. Dark reaction</strong> – Uses energy to make glucose.
+                        </li>
+                      </ol>
+                    </div>
+                  </div>
 
-            {/* Score Stepper / Editor */}
-            <div className="eval-section">
-              <label className="eval-label">Awarded Score</label>
-              <div className="score-adjuster-box">
-                <button
-                  className="score-step-btn"
-                  onClick={() => handleScoreChange(activeQuestion.id, activeQuestion.awardedMarks - 1)}
-                  disabled={activeQuestion.awardedMarks <= 0}
-                >
-                  -
-                </button>
-                <input
-                  type="number"
-                  min={0}
-                  max={activeQuestion.maxMarks}
-                  value={activeQuestion.awardedMarks}
-                  onChange={(e) => handleScoreChange(activeQuestion.id, Number(e.target.value))}
-                  className="score-input"
-                />
-                <button
-                  className="score-step-btn"
-                  onClick={() => handleScoreChange(activeQuestion.id, activeQuestion.awardedMarks + 1)}
-                  disabled={activeQuestion.awardedMarks >= activeQuestion.maxMarks}
-                >
-                  +
-                </button>
-                <span className="score-max-label">/ {activeQuestion.maxMarks} Marks</span>
-              </div>
-            </div>
+                  {/* Bottom Q1 Continuation Box */}
+                  <div
+                    className={`handwritten-block q1-bottom-block ${activeQuestionId === "q1" ? "target-bounding-box-active" : ""}`}
+                    data-question-id="q1"
+                    onClick={() => selectQuestionFromCanvas("q1")}
+                  >
+                    <div className="green-bounding-box-badge">Q1</div>
+                    <span className="handwritten-label">Q1.</span>
+                    <div className="handwritten-body">
+                      <p className="handwritten-paragraph">
+                        Photosynthesis is the process used by green plants and some other organisms to convert light energy into chemical energy.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
 
-            {/* Next / Prev Question Navigator */}
-            <div className="eval-nav-buttons">
-              <button
-                className="secondary-pill-compact"
-                disabled={activeIndex <= 0}
-                onClick={() => selectQuestion(questions[activeIndex - 1])}
-              >
-                <ChevronLeft size={15} />
-                <span>Prev Question</span>
-              </button>
-              <button
-                className="secondary-pill-compact"
-                disabled={activeIndex >= questions.length - 1}
-                onClick={() => selectQuestion(questions[activeIndex + 1])}
-              >
-                <span>Next Question</span>
-                <ChevronRight size={15} />
-              </button>
-            </div>
-          </div>
-        </aside>
-      </div>
+              {currentPage === 2 && (
+                <>
+                  {/* Q3 Answer Block */}
+                  <div
+                    className={`handwritten-block ${activeQuestionId === "q3" ? "target-bounding-box-active" : ""}`}
+                    data-question-id="q3"
+                    onClick={() => selectQuestionFromCanvas("q3")}
+                  >
+                    <div className="green-bounding-box-badge">Q3</div>
+                    <span className="handwritten-label">Q3.</span>
+                    <div className="handwritten-body">
+                      <p className="handwritten-paragraph">
+                        Chloroplasts contain chlorophyll pigment in thylakoid membranes that absorbs solar photons.
+                        <br />
+                        Stage 1 (Light Dependent): In thylakoids, photolysis of water produces ATP and NADPH with O<sub>2</sub> release.
+                        <br />
+                        Stage 2 (Calvin Cycle / Dark Reaction): In the stroma, CO<sub>2</sub> is enzymatically fixed into glucose utilizing ATP & NADPH.
+                      </p>
+                    </div>
+                  </div>
 
-      {/* Summary Diagnostics Modal */}
-      {showSummaryModal && (
-        <div className="summary-modal-backdrop" onClick={() => setShowSummaryModal(false)}>
-          <div className="summary-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div>
-                <h2>Assessment Grading Summary</h2>
-                <p>{data.paperTitle} • {data.subject}</p>
-              </div>
-              <button className="modal-close-btn" onClick={() => setShowSummaryModal(false)}>
-                ✕
-              </button>
-            </div>
+                  {/* Q4 Skipped Notice */}
+                  <div
+                    className={`handwritten-block skipped-block ${activeQuestionId === "q4" ? "target-bounding-box-active" : ""}`}
+                    data-question-id="q4"
+                    onClick={() => selectQuestionFromCanvas("q4")}
+                  >
+                    <span className="handwritten-label">Q4.</span>
+                    <div className="handwritten-body">
+                      <span className="skipped-handwritten-note">[Unattempted / Skipped by Student]</span>
+                    </div>
+                  </div>
 
-            <div className="modal-stats-grid">
-              <div className="stat-card">
-                <span className="stat-num">{totalAwardedMarks} / {totalMaxMarks}</span>
-                <span className="stat-label">Total Score ({percentage}%)</span>
-              </div>
-              <div className="stat-card">
-                <span className="stat-num">{questions.filter((q) => q.status === "answered").length}</span>
-                <span className="stat-label">Full Credit</span>
-              </div>
-              <div className="stat-card">
-                <span className="stat-num">{questions.filter((q) => q.status === "partial").length}</span>
-                <span className="stat-label">Partial Credit</span>
-              </div>
-              <div className="stat-card">
-                <span className="stat-num">{questions.filter((q) => q.status === "unanswered").length}</span>
-                <span className="stat-label">Skipped</span>
-              </div>
-            </div>
+                  {/* Q5 Alveolus Answer Block */}
+                  <div
+                    className={`handwritten-block ${activeQuestionId === "q5" ? "target-bounding-box-active" : ""}`}
+                    data-question-id="q5"
+                    onClick={() => selectQuestionFromCanvas("q5")}
+                  >
+                    <div className="green-bounding-box-badge">Q5</div>
+                    <span className="handwritten-label">Q5.</span>
+                    <div className="handwritten-body">
+                      <p className="handwritten-paragraph">
+                        Alveolar gas exchange diagram: Thin respiratory membrane between alveolar wall and pulmonary capillaries facilitates O<sub>2</sub> intake and CO<sub>2</sub> release.
+                      </p>
+                      <div className="alveolus-diagram-placeholder">
+                        <span className="diagram-tag">Alveolar Sac (O<sub>2</sub> in, CO<sub>2</sub> out) • Pulmonary Capillaries</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
 
-            <div className="modal-feedback-section">
-              <h3>Overall Teacher Feedback</h3>
-              <p>{data.overallFeedback}</p>
-            </div>
+              {currentPage === 3 && (
+                <>
+                  {/* Q6 Digestive System */}
+                  <div
+                    className={`handwritten-block ${activeQuestionId === "q6" ? "target-bounding-box-active" : ""}`}
+                    data-question-id="q6"
+                    onClick={() => selectQuestionFromCanvas("q6")}
+                  >
+                    <div className="green-bounding-box-badge">Q6</div>
+                    <span className="handwritten-label">Q6.</span>
+                    <div className="handwritten-body">
+                      <p className="handwritten-paragraph">
+                        Human Digestive System: Food travels through Oesophagus ➔ Stomach (pepsin/HCl digestion) ➔ Small Intestine (Site of maximum absorption via villi) ➔ Large Intestine.
+                      </p>
+                    </div>
+                  </div>
 
-            <div className="modal-actions">
-              <button className="primary-pill-compact" onClick={() => setShowSummaryModal(false)}>
-                Close Summary
-              </button>
+                  {/* Q7 Nephron */}
+                  <div
+                    className={`handwritten-block ${activeQuestionId === "q7" ? "target-bounding-box-active" : ""}`}
+                    data-question-id="q7"
+                    onClick={() => selectQuestionFromCanvas("q7")}
+                  >
+                    <div className="green-bounding-box-badge">Q7</div>
+                    <span className="handwritten-label">Q7.</span>
+                    <div className="handwritten-body">
+                      <p className="handwritten-paragraph">
+                        Structure of Nephron:
+                        1. Bowman&apos;s Capsule enclosing Glomerulus (Ultrafiltration)
+                        2. Proximal Convoluted Tubule (Selective reabsorption of glucose, amino acids)
+                        3. Loop of Henle (Osmoregulation)
+                        4. Distal Convoluted Tubule & Collecting Duct (Urine concentration).
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {currentPage === 4 && (
+                <>
+                  {/* Q8 Palisade vs Spongy Mesophyll */}
+                  <div
+                    className={`handwritten-block ${activeQuestionId === "q8" ? "target-bounding-box-active" : ""}`}
+                    data-question-id="q8"
+                    onClick={() => selectQuestionFromCanvas("q8")}
+                  >
+                    <div className="green-bounding-box-badge">Q8</div>
+                    <span className="handwritten-label">Q8.</span>
+                    <div className="handwritten-body">
+                      <p className="handwritten-paragraph">
+                        <strong>Palisade Mesophyll:</strong> Elongated, vertically aligned cells located just below the upper epidermis with high chloroplast density to trap maximum sunlight.
+                        <br /><br />
+                        <strong>Spongy Mesophyll:</strong> Loosely arranged rounded cells with large intercellular air spaces to facilitate rapid gas exchange (CO<sub>2</sub>/O<sub>2</sub>) between stomata and photosynthetic cells.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
-      )}
-    </section>
+      </section>
+    </div>
   );
 }

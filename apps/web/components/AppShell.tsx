@@ -207,7 +207,7 @@ export function AppShell({
           </button>
 
           <div className="breadcrumb">
-            <LayoutGrid size={17} />
+            {crumb === "Exams" ? <ScrollText size={17} /> : <LayoutGrid size={17} />}
             <span>{crumb}</span>
           </div>
 
