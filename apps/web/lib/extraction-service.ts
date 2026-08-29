@@ -113,8 +113,8 @@ export async function processAssessmentExtraction(
     formData.append("apiKey", effectiveApiKey);
   }
 
-  // Stage 5: AI Evaluation with Groq
-  onProgress?.("Running AI evaluation & scoring with Groq...", 95);
+  // Stage 5: AI Evaluation with Alibaba Model Studio
+  onProgress?.("Running AI evaluation & scoring with Alibaba Model Studio...", 95);
 
   let res: Response;
   try {

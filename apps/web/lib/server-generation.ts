@@ -123,16 +123,21 @@ export function fallbackQuestionPaper(rawInput: AssignmentInput): QuestionPaper 
 }
 
 export async function generateServerQuestionPaper(input: AssignmentInput): Promise<QuestionPaper> {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey =
+    process.env.DASHSCOPE_API_KEY ||
+    process.env.ALIBABA_API_KEY ||
+    process.env.QWEN_API_KEY ||
+    "sk-ws-H.DDDDEHD.ZMvf.MEYCIQD-zYwZYos2V7MlHekgEpw0IT3oUKLrdJQUClVVRpo3AgIhAP47v13kaUJS_JNBcURwjMoeZ2Frt8CKeh_4wJ9ZOT38";
+
   if (!apiKey) return fallbackQuestionPaper(input);
 
   try {
     const client = new OpenAI({
       apiKey,
-      baseURL: "https://api.groq.com/openai/v1"
+      baseURL: process.env.QWEN_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
     });
     const response = await client.chat.completions.create({
-      model: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
+      model: process.env.QWEN_MODEL || "qwen-plus",
       temperature: 0.35,
       response_format: { type: "json_object" },
       messages: [
@@ -141,10 +146,10 @@ export async function generateServerQuestionPaper(input: AssignmentInput): Promi
       ]
     });
     const content = response.choices[0]?.message?.content;
-    if (!content) throw new Error("Groq returned an empty response");
+    if (!content) throw new Error("AI engine returned an empty response");
     return questionPaperSchema.parse(safeJsonParse(content));
   } catch (error) {
-    console.warn("[web-api] Groq generation failed; using fallback", error);
+    console.warn("[web-api] AI generation failed; using fallback", error);
     return fallbackQuestionPaper(input);
   }
 }

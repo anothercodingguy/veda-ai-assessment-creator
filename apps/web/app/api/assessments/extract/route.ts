@@ -178,14 +178,16 @@ export async function POST(request: Request) {
     }
 
     const apiKey =
+      process.env.DASHSCOPE_API_KEY?.trim() ||
+      process.env.ALIBABA_API_KEY?.trim() ||
+      process.env.QWEN_API_KEY?.trim() ||
       clientApiKey?.trim() ||
-      process.env.GROQ_API_KEY?.trim();
+      "sk-ws-H.DDDDEHD.ZMvf.MEYCIQD-zYwZYos2V7MlHekgEpw0IT3oUKLrdJQUClVVRpo3AgIhAP47v13kaUJS_JNBcURwjMoeZ2Frt8CKeh_4wJ9ZOT38";
 
     if (!apiKey) {
       return NextResponse.json(
         {
-          error:
-            "Groq API Key not configured. Please add GROQ_API_KEY in your Vercel Environment Variables or enter it in the upload box."
+          error: "Model Studio API Key not configured. Please configure DASHSCOPE_API_KEY."
         },
         { status: 400 }
       );
@@ -228,15 +230,15 @@ export async function POST(request: Request) {
 
     const client = new OpenAI({
       apiKey,
-      baseURL: "https://api.groq.com/openai/v1"
+      baseURL: process.env.QWEN_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
     });
 
     const candidateModels = [
-      process.env.GROQ_MODEL,
-      "openai/gpt-oss-120b",
-      "qwen/qwen3.8-27b",
-      "groq/compound",
-      "openai/gpt-oss-20b"
+      process.env.QWEN_MODEL,
+      "qwen-plus",
+      "qwen-max",
+      "qwen-turbo",
+      "qwen-vl-max"
     ].filter(Boolean) as string[];
 
     const systemPrompt = `

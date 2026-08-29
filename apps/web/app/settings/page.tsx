@@ -128,22 +128,10 @@ export default function SettingsPage() {
                 onChange={(e) => setSelectedModel(e.target.value)}
                 className="settings-select"
               >
-                <option value="llama-3.3-70b-versatile">Groq: Llama 3.3 70B Versatile (Fastest)</option>
-                <option value="gpt-4o">OpenAI: GPT-4o (Vision Multimodal)</option>
-                <option value="claude-3-7-sonnet">Anthropic: Claude 3.7 Sonnet</option>
+                <option value="qwen-plus">Alibaba Model Studio: Qwen Plus (High Accuracy & Vision)</option>
+                <option value="qwen-max">Alibaba Model Studio: Qwen Max (Complex Reasoning)</option>
+                <option value="qwen-turbo">Alibaba Model Studio: Qwen Turbo (Ultra Fast)</option>
               </select>
-            </div>
-
-            <div className="settings-field-group">
-              <label className="settings-label">Groq API Key (Optional Override)</label>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="settings-input"
-                placeholder="gsk_..."
-              />
-              <small className="settings-hint">System uses environment key by default.</small>
             </div>
 
             <div className="settings-field-group">
