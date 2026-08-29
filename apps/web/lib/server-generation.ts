@@ -133,7 +133,7 @@ export async function generateServerQuestionPaper(input: AssignmentInput): Promi
       baseURL: process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta/openai/"
     });
     const response = await client.chat.completions.create({
-      model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+      model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
       temperature: 0.35,
       response_format: { type: "json_object" },
       messages: [
