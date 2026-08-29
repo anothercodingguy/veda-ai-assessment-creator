@@ -294,33 +294,30 @@ export async function POST(request: Request) {
     const isQpImage = qpFile.type.startsWith("image/") || /\.(png|jpg|jpeg|webp)$/i.test(qpName);
     const isAsImage = asFile.type.startsWith("image/") || /\.(png|jpg|jpeg|webp)$/i.test(asName);
 
-    let qpText = "";
-    let asText = "";
-    let qpBase64 = "";
-    let asBase64 = "";
+    const clientQpText = formData.get("qpText") as string | null;
+    const clientAsText = formData.get("asText") as string | null;
+
+    let qpText = clientQpText?.trim() || "";
+    let asText = clientAsText?.trim() || "";
 
     // Process Question Paper
-    if (isQpPdf) {
-      const qpBuffer = Buffer.from(await qpFile.arrayBuffer());
-      qpText = await extractTextFromPdfBuffer(qpBuffer);
-    } else if (isQpImage) {
-      const buffer = Buffer.from(await qpFile.arrayBuffer());
-      const mime = qpFile.type || "image/jpeg";
-      qpBase64 = `data:${mime};base64,${buffer.toString("base64")}`;
-    } else {
-      qpText = (await qpFile.text()).slice(0, 30000);
+    if (!qpText) {
+      if (isQpPdf) {
+        const qpBuffer = Buffer.from(await qpFile.arrayBuffer());
+        qpText = await extractTextFromPdfBuffer(qpBuffer);
+      } else if (!isQpImage) {
+        qpText = (await qpFile.text()).slice(0, 30000);
+      }
     }
 
     // Process Answer Sheet
-    if (isAsPdf) {
-      const asBuffer = Buffer.from(await asFile.arrayBuffer());
-      asText = await extractTextFromPdfBuffer(asBuffer);
-    } else if (isAsImage) {
-      const buffer = Buffer.from(await asFile.arrayBuffer());
-      const mime = asFile.type || "image/jpeg";
-      asBase64 = `data:${mime};base64,${buffer.toString("base64")}`;
-    } else {
-      asText = (await asFile.text()).slice(0, 30000);
+    if (!asText) {
+      if (isAsPdf) {
+        const asBuffer = Buffer.from(await asFile.arrayBuffer());
+        asText = await extractTextFromPdfBuffer(asBuffer);
+      } else if (!isAsImage) {
+        asText = (await asFile.text()).slice(0, 30000);
+      }
     }
 
     const client = new OpenAI({
