@@ -131,32 +131,16 @@ export async function generateServerQuestionPaper(input: AssignmentInput): Promi
       apiKey,
       baseURL: "https://api.groq.com/openai/v1"
     });
-    const candidateModels = [
-      process.env.GROQ_MODEL,
-      "openai/gpt-oss-120b",
-      "openai/gpt-oss-20b",
-      "qwen/qwen3.8-27b",
-      "llama-3.3-70b-versatile"
-    ].filter(Boolean) as string[];
-
-    let content: string | null = null;
-    for (const model of candidateModels) {
-      try {
-        const response = await client.chat.completions.create({
-          model,
-          temperature: 0.35,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: "You create structured assessment papers and return valid JSON only." },
-            { role: "user", content: buildServerPrompt(input) }
-          ]
-        });
-        content = response.choices[0]?.message?.content ?? null;
-        if (content) break;
-      } catch (err: any) {
-        console.warn(`[web-api] Model ${model} failed, trying next candidate:`, err.message);
-      }
-    }
+    const response = await client.chat.completions.create({
+      model: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
+      temperature: 0.35,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: "You create structured assessment papers and return valid JSON only." },
+        { role: "user", content: buildServerPrompt(input) }
+      ]
+    });
+    const content = response.choices[0]?.message?.content;
     if (!content) throw new Error("Groq returned an empty response");
     return questionPaperSchema.parse(safeJsonParse(content));
   } catch (error) {
