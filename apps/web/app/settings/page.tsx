@@ -17,7 +17,7 @@ import { AppShell } from "../../components/AppShell";
 
 export default function SettingsPage() {
   const [apiKey, setApiKey] = useState("");
-  const [selectedModel, setSelectedModel] = useState("llama-3.3-70b-versatile");
+  const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
   const [schoolName, setSchoolName] = useState("Delhi Public School");
   const [branch, setBranch] = useState("Bokaro Steel City");
   const [board, setBoard] = useState("CBSE (Central Board of Secondary Education)");
@@ -26,7 +26,7 @@ export default function SettingsPage() {
 
   React.useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedKey = localStorage.getItem("veda_groq_api_key") || "";
+      const savedKey = localStorage.getItem("veda_gemini_api_key") || "";
       if (savedKey) {
         setApiKey(savedKey);
       }
@@ -36,7 +36,7 @@ export default function SettingsPage() {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (typeof window !== "undefined" && apiKey) {
-      localStorage.setItem("veda_groq_api_key", apiKey.trim());
+      localStorage.setItem("veda_gemini_api_key", apiKey.trim());
     }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -128,9 +128,9 @@ export default function SettingsPage() {
                 onChange={(e) => setSelectedModel(e.target.value)}
                 className="settings-select"
               >
-                <option value="qwen-plus">Alibaba Model Studio: Qwen Plus (High Accuracy & Vision)</option>
-                <option value="qwen-max">Alibaba Model Studio: Qwen Max (Complex Reasoning)</option>
-                <option value="qwen-turbo">Alibaba Model Studio: Qwen Turbo (Ultra Fast)</option>
+                <option value="gemini-2.5-flash">Google Gemini: Gemini 2.5 Flash (Ultra Fast & Accurate)</option>
+                <option value="gemini-2.5-pro">Google Gemini: Gemini 2.5 Pro (Deep Reasoning & Multimodal)</option>
+                <option value="gemini-1.5-flash">Google Gemini: Gemini 1.5 Flash (Standard)</option>
               </select>
             </div>
 

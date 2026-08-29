@@ -111,7 +111,7 @@ export function HomePageView() {
               <div className="tool-suite-details">
                 <h3>Assessment Extraction & Mapping Studio</h3>
                 <p>
-                  Upload Question Papers and Student Answer Sheets to extract questions in printed order, transcribe handwritten responses, and generate rubric-backed evaluations with Groq.
+                  Upload Question Papers and Student Answer Sheets to extract questions in printed order, transcribe handwritten responses, and generate rubric-backed evaluations with Google Gemini.
                 </p>
                 <button
                   type="button"
@@ -193,9 +193,9 @@ export function HomePageView() {
                 <Settings size={24} />
               </div>
               <div className="tool-suite-details">
-                <h3>System Settings & Groq API Config</h3>
+                <h3>System Settings & AI Model Config</h3>
                 <p>
-                  Configure your Groq API key, default AI evaluation models, school affiliation details, and grading strictness.
+                  Configure your Gemini API key, default AI evaluation models, school affiliation details, and grading strictness.
                 </p>
                 <Link className="secondary-pill-compact" href="/settings">
                   <span>Open Settings</span>

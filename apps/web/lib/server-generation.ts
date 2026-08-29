@@ -123,21 +123,17 @@ export function fallbackQuestionPaper(rawInput: AssignmentInput): QuestionPaper 
 }
 
 export async function generateServerQuestionPaper(input: AssignmentInput): Promise<QuestionPaper> {
-  const apiKey =
-    process.env.DASHSCOPE_API_KEY ||
-    process.env.ALIBABA_API_KEY ||
-    process.env.QWEN_API_KEY ||
-    "sk-ws-H.DDDDEHD.ZMvf.MEYCIQD-zYwZYos2V7MlHekgEpw0IT3oUKLrdJQUClVVRpo3AgIhAP47v13kaUJS_JNBcURwjMoeZ2Frt8CKeh_4wJ9ZOT38";
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) return fallbackQuestionPaper(input);
 
   try {
     const client = new OpenAI({
       apiKey,
-      baseURL: process.env.QWEN_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+      baseURL: process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta/openai/"
     });
     const response = await client.chat.completions.create({
-      model: process.env.QWEN_MODEL || "qwen-plus",
+      model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
       temperature: 0.35,
       response_format: { type: "json_object" },
       messages: [

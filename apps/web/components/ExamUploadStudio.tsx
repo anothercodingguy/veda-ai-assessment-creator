@@ -114,7 +114,7 @@ export function ExamUploadStudio() {
         <h1 className="exam-main-title">
           Upload <span className="title-orange-pill">Question Paper & Answer Sheets</span>
         </h1>
-        <p className="exam-main-subtitle">Upload both files to run real AI assessment extraction with Groq</p>
+        <p className="exam-main-subtitle">Upload both files to run real AI assessment extraction with Google Gemini</p>
       </div>
 
       {/* Teacher Orbital Graphic */}
@@ -263,7 +263,7 @@ export function ExamUploadStudio() {
         </button>
 
         <p className="mapping-hint-text">
-          Once both files are uploaded, Groq AI will extract and map answers with questions
+          Once both files are uploaded, Google Gemini will extract and map answers with questions
         </p>
 
         {errorMsg && (

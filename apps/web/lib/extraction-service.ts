@@ -102,7 +102,7 @@ export async function processAssessmentExtraction(
 
   const effectiveApiKey =
     apiKey?.trim() ||
-    (typeof window !== "undefined" ? localStorage.getItem("veda_groq_api_key") || "" : "");
+    (typeof window !== "undefined" ? localStorage.getItem("veda_gemini_api_key") || "" : "");
 
   const formData = new FormData();
   formData.append("questionPaper", optimizedQP);
@@ -113,8 +113,8 @@ export async function processAssessmentExtraction(
     formData.append("apiKey", effectiveApiKey);
   }
 
-  // Stage 5: AI Evaluation with Alibaba Model Studio
-  onProgress?.("Running AI evaluation & scoring with Alibaba Model Studio...", 95);
+  // Stage 5: AI Evaluation with Google Gemini
+  onProgress?.("Running AI evaluation & scoring with Google Gemini...", 95);
 
   let res: Response;
   try {

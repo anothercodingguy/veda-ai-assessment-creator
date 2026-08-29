@@ -178,16 +178,14 @@ export async function POST(request: Request) {
     }
 
     const apiKey =
-      process.env.DASHSCOPE_API_KEY?.trim() ||
-      process.env.ALIBABA_API_KEY?.trim() ||
-      process.env.QWEN_API_KEY?.trim() ||
+      process.env.GEMINI_API_KEY?.trim() ||
       clientApiKey?.trim() ||
-      "sk-ws-H.DDDDEHD.ZMvf.MEYCIQD-zYwZYos2V7MlHekgEpw0IT3oUKLrdJQUClVVRpo3AgIhAP47v13kaUJS_JNBcURwjMoeZ2Frt8CKeh_4wJ9ZOT38";
+      "";
 
     if (!apiKey) {
       return NextResponse.json(
         {
-          error: "Model Studio API Key not configured. Please configure DASHSCOPE_API_KEY."
+          error: "Gemini API Key not configured. Please add GEMINI_API_KEY in your environment variables."
         },
         { status: 400 }
       );
@@ -230,15 +228,15 @@ export async function POST(request: Request) {
 
     const client = new OpenAI({
       apiKey,
-      baseURL: process.env.QWEN_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+      baseURL: process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta/openai/"
     });
 
     const candidateModels = [
-      process.env.QWEN_MODEL,
-      "qwen-plus",
-      "qwen-max",
-      "qwen-turbo",
-      "qwen-vl-max"
+      process.env.GEMINI_MODEL,
+      "gemini-2.5-flash",
+      "gemini-2.5-pro",
+      "gemini-1.5-flash",
+      "gemini-1.5-pro"
     ].filter(Boolean) as string[];
 
     const systemPrompt = `
@@ -325,7 +323,7 @@ Please extract all questions in printed order (treating sub-parts as separate it
     }
 
     if (!content) {
-      throw lastError || new Error("Groq returned an empty response. Please verify the uploaded documents and retry.");
+      throw lastError || new Error("Gemini AI returned an empty response. Please verify the uploaded documents and retry.");
     }
 
     const cleanJson = content.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "");
