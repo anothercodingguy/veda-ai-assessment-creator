@@ -9,10 +9,14 @@
   "scripts": {
     "dev": "npm run dev -w @veda/web",
     "dev:web": "npm run dev -w @veda/web",
+    "dev:api": "npm run dev -w @veda/api",
+    "dev:worker": "npm run dev -w @veda/worker",
+    "dev:all": "concurrently \"npm run dev -w @veda/web\" \"npm run dev -w @veda/api\" \"npm run dev -w @veda/worker\"",
     "build": "npm run build -w @veda/web",
-    "test": "npm run test -ws --if-present",
-    "typecheck": "npm run typecheck -ws --if-present",
-    "lint": "npm run lint -ws --if-present"
+    "build:all": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
   },
   "dependencies": {
     "next": "^15.3.3",
