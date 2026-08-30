@@ -66,12 +66,15 @@ button:disabled {
   display: flex;
   flex: 0 0 292px;
   flex-direction: column;
-  min-height: calc(100vh - 36px);
-  padding: 32px 28px 26px;
+  height: calc(100vh - 36px);
+  max-height: calc(100vh - 36px);
+  padding: 24px 20px 20px;
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow);
+  box-sizing: border-box;
+  justify-content: space-between;
 }
 
 .brand {
@@ -224,6 +227,9 @@ button:disabled {
 .main-panel {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 40px;
 }
 
 .topbar {
@@ -1505,8 +1511,11 @@ button:disabled {
 .sidebar.is-collapsed {
   flex: 0 0 76px;
   min-width: 76px;
-  padding: 24px 12px;
+  max-width: 76px;
+  padding: 20px 12px 18px;
   align-items: center;
+  box-sizing: border-box;
+  justify-content: space-between;
 }
 
 .sidebar.is-collapsed .sidebar-header-row {
@@ -1525,7 +1534,7 @@ button:disabled {
 .sidebar.is-hover-expanded {
   flex: 0 0 280px;
   min-width: 280px;
-  padding: 32px 24px 26px;
+  padding: 24px 20px 20px;
   align-items: stretch;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.16);
 }
@@ -1542,15 +1551,28 @@ button:disabled {
 
 .collapsed-footer {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 12px;
+  width: 100%;
+  padding-bottom: 2px;
 }
 
 .avatar.school-avatar.mini {
   width: 36px;
   height: 36px;
   font-size: 14px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #166534;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.avatar.school-avatar.mini:hover {
+  transform: scale(1.08);
 }
 
 .expand-bottom-btn {
@@ -1571,13 +1593,13 @@ button:disabled {
   justify-content: center;
   gap: 10px;
   width: 100%;
-  min-height: 48px;
-  margin: 32px 0 28px;
-  padding: 0 18px;
+  min-height: 44px;
+  margin: 16px 0 16px;
+  padding: 0 16px;
   border-radius: 999px;
   background: #1e1e1e;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 750;
   box-shadow: 0 0 0 2px #ff5e3a, 0 6px 16px rgba(255, 94, 58, 0.25);
   transition: all 0.2s ease;
@@ -1591,6 +1613,8 @@ button:disabled {
 .ai-toolkit-btn.mini {
   width: 44px;
   min-height: 44px;
+  height: 44px;
+  margin: 12px 0 14px;
   padding: 0;
   border-radius: 12px;
 }
@@ -1670,16 +1694,16 @@ button:disabled {
   align-items: center;
   width: 100%;
   max-width: 900px;
-  margin: 36px auto 48px;
+  margin: 14px auto 20px;
   text-align: center;
 }
 
 .exam-heading-wrapper {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .exam-main-title {
-  font-size: 36px;
+  font-size: 34px;
   font-weight: 850;
   color: #111827;
   letter-spacing: -0.8px;
@@ -1702,8 +1726,8 @@ button:disabled {
 }
 
 .exam-main-subtitle {
-  margin: 8px 0 0;
-  font-size: 15px;
+  margin: 6px 0 0;
+  font-size: 14.5px;
   color: #64748b;
   font-weight: 500;
 }
@@ -1711,9 +1735,9 @@ button:disabled {
 /* Teacher Illustration Graphic */
 .teacher-illustration-wrapper {
   position: relative;
-  width: 130px;
-  height: 130px;
-  margin: 8px auto 26px;
+  width: 110px;
+  height: 110px;
+  margin: 4px auto 18px;
   display: grid;
   place-items: center;
 }
@@ -1725,13 +1749,13 @@ button:disabled {
 }
 
 .ring-outer {
-  width: 126px;
-  height: 126px;
+  width: 106px;
+  height: 106px;
 }
 
 .ring-inner {
-  width: 100px;
-  height: 100px;
+  width: 82px;
+  height: 82px;
   background: radial-gradient(circle, rgba(255, 94, 58, 0.12) 0%, rgba(255, 94, 58, 0.02) 70%, transparent 100%);
 }
 
@@ -1739,8 +1763,8 @@ button:disabled {
   position: absolute;
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: #ff5e3a;
   color: #ffffff;
@@ -1748,16 +1772,16 @@ button:disabled {
   z-index: 2;
 }
 
-.badge-top { top: 2px; left: 62px; }
-.badge-right { top: 58px; right: 2px; }
-.badge-bottom { bottom: 2px; left: 48px; }
-.badge-left { top: 40px; left: 2px; }
+.badge-top { top: 2px; left: 45px; }
+.badge-right { top: 45px; right: 2px; }
+.badge-bottom { bottom: 2px; left: 45px; }
+.badge-left { top: 45px; left: 2px; }
 
 .teacher-avatar-circle {
   position: relative;
   z-index: 1;
-  width: 76px;
-  height: 76px;
+  width: 66px;
+  height: 66px;
   border-radius: 50%;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
@@ -3602,8 +3626,9 @@ button:disabled {
 .home-dashboard-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   width: 100%;
+  padding-bottom: 36px;
 }
 
 .home-tabs-bar {
@@ -3646,7 +3671,8 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 20px;
+  margin-bottom: 24px;
 }
 
 .quick-tools-title {

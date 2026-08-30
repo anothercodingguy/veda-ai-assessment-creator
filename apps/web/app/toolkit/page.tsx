@@ -151,10 +151,10 @@ export default function ToolkitPage() {
                 <FileText size={18} />
               </div>
               <div>
-                <h3>CBSE Paper Generator</h3>
+                <h3>CBSE Assignment Generator</h3>
                 <p>Generate CBSE Class 10/12 blueprint compliant question papers with answer keys.</p>
                 <Link className="mini-card-link" href="/assignments/new">
-                  <span>Create Paper</span>
+                  <span>Create Assignment</span>
                   <ArrowRight size={13} />
                 </Link>
               </div>

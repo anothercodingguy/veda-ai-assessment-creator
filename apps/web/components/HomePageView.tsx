@@ -54,7 +54,7 @@ export function HomePageView() {
                   <FileText size={18} />
                 </div>
                 <div className="quick-tool-info">
-                  <strong>Create Exam Paper</strong>
+                  <strong>Create Assignment</strong>
                   <span>CBSE & ICSE blueprint paper generator</span>
                 </div>
                 <ArrowRight size={15} className="quick-tool-arrow" />
@@ -129,12 +129,12 @@ export function HomePageView() {
                 <FileText size={24} />
               </div>
               <div className="tool-suite-details">
-                <h3>CBSE & ICSE Question Paper Generator</h3>
+                <h3>CBSE & ICSE Assignment Generator</h3>
                 <p>
                   Create balanced examination papers with question type distribution, difficulty breakdown (Easy / Moderate / Hard), detailed answer keys, and vector PDF exports.
                 </p>
                 <Link className="secondary-pill-compact" href="/assignments/new">
-                  <span>Create Question Paper</span>
+                  <span>Create Assignment</span>
                   <ArrowRight size={15} />
                 </Link>
               </div>

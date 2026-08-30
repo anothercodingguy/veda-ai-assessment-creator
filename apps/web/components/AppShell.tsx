@@ -30,7 +30,7 @@ const navItems = [
   { label: "Home", href: "/", icon: LayoutGrid },
   { label: "Exams", href: "/", icon: ScrollText },
   { label: "My Classroom", href: "/groups", icon: Users },
-  { label: "Create Paper", href: "/assignments/new", icon: FileText },
+  { label: "Create Assignment", href: "/assignments/new", icon: FileText },
   { label: "My Library", href: "/library", icon: Clock },
   { label: "AI Toolkit", href: "/toolkit", icon: BookOpen }
 ];
@@ -168,11 +168,8 @@ export function AppShell({
               </div>
             </div>
           ) : (
-            <div className="collapsed-footer">
+            <div className="collapsed-footer" title="Delhi Public School · Bokaro Steel City">
               <div className="avatar school-avatar mini">D</div>
-              <div className="expand-bottom-btn" title="Hover to expand">
-                <ChevronsRight size={16} />
-              </div>
             </div>
           )}
         </div>
