@@ -11,3 +11,5 @@ uploads
 tmp
 .DS_Store
 .vercel
+.env*.local
+scratch/
